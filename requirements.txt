@@ -1,0 +1,3 @@
+PySide6>=6.0.0
+pybit>=5.0.0
+requests>=2.25.0
