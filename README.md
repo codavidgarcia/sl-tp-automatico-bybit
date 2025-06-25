@@ -31,9 +31,45 @@ pybit>=5.0.0
 requests>=2.25.0
 ```
 
-## 📦 Instalación
+## 📦 Instalación y Distribución
 
-### Método 1: Instalación Automática (Recomendado)
+### Método 1: Ejecutables Precompilados (Más Fácil)
+
+Si solo quieres usar la aplicación sin instalar Python:
+
+#### Windows
+1. Descarga `SL-TP-Automatico.exe`
+2. Ejecuta directamente el archivo
+3. ¡Listo! No necesitas Python ni dependencias
+
+#### macOS
+1. Descarga `SL-TP-Automatico.app` o `SL-TP-Automatico.dmg`
+2. Ejecuta directamente la aplicación
+3. ¡Listo! No necesitas Python ni dependencias
+
+### Método 2: Crear Tu Propio Ejecutable
+
+Si quieres compilar la aplicación tú mismo:
+
+#### Constructor Universal (Recomendado)
+```bash
+# Funciona en Windows, Mac y Linux
+python build.py
+```
+
+#### Constructores Específicos por Plataforma
+
+**Windows:**
+```cmd
+build_windows.bat
+```
+
+**macOS:**
+```bash
+./build_mac.sh
+```
+
+### Método 3: Instalación Automática (Para Desarrolladores)
 
 #### Windows
 1. Descarga o clona el repositorio
@@ -187,6 +223,55 @@ python run.py
 ### Pestaña 4: ℹ️ Acerca de
 - Información sobre la aplicación
 - Créditos y enlaces de contacto
+
+## 🏗️ Construcción de Ejecutables
+
+### ¿Por qué crear ejecutables?
+- **Fácil distribución**: Un solo archivo que funciona sin Python
+- **Sin dependencias**: Los usuarios no necesitan instalar nada
+- **Profesional**: Se ve y funciona como software comercial
+
+### Proceso de Construcción
+
+#### Método Universal (Recomendado)
+```bash
+# 1. Instalar dependencias de construcción
+pip install -r requirements.txt
+
+# 2. Ejecutar constructor universal
+python build.py
+```
+
+#### Proceso Manual con PyInstaller
+```bash
+# Windows
+pyinstaller --onefile --windowed --name "SL-TP-Automatico" pyside_trading_gui.py
+
+# macOS
+pyinstaller --onefile --windowed --name "SL-TP-Automatico" --osx-bundle-identifier "com.codavidgarcia.sl-tp-automatico" pyside_trading_gui.py
+```
+
+### Resultados de la Construcción
+
+#### Windows
+- **Archivo**: `dist/SL-TP-Automatico.exe`
+- **Tamaño**: ~80-120 MB
+- **Distribución**: Envía solo el archivo .exe
+
+#### macOS
+- **Archivo**: `dist/SL-TP-Automatico` (aplicación Unix)
+- **DMG**: `dist/SL-TP-Automatico.dmg` (opcional)
+- **Tamaño**: ~80-120 MB
+- **Distribución**: Envía la aplicación o el DMG
+
+### Optimización del Ejecutable
+
+Para reducir el tamaño del ejecutable:
+```bash
+# Usar UPX (compresor de ejecutables)
+pip install upx-ucl
+pyinstaller --onefile --windowed --upx-dir=/path/to/upx pyside_trading_gui.py
+```
 
 ## 🔧 Configuración Avanzada
 
