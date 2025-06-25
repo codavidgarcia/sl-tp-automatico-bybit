@@ -33,7 +33,26 @@ requests>=2.25.0
 
 ## 📦 Instalación
 
-### Paso 1: Verificar Python
+### Método 1: Instalación Automática (Recomendado)
+
+#### Windows
+1. Descarga o clona el repositorio
+2. Ejecuta el instalador automático:
+```cmd
+install_windows.bat
+```
+
+#### macOS/Linux
+1. Descarga o clona el repositorio
+2. Ejecuta el instalador automático:
+```bash
+chmod +x install_unix.sh
+./install_unix.sh
+```
+
+### Método 2: Instalación Manual
+
+#### Paso 1: Verificar Python
 Asegúrate de tener Python 3.8+ instalado:
 ```bash
 python --version
@@ -41,13 +60,22 @@ python --version
 
 Si no tienes Python instalado, descárgalo desde [python.org](https://python.org)
 
-### Paso 2: Clonar el Repositorio
+#### Paso 2: Clonar el Repositorio
 ```bash
 git clone https://github.com/tu-usuario/slltp-automatico-codavidgarcia.git
 cd slltp-automatico-codavidgarcia
 ```
 
-### Paso 3: Crear Entorno Virtual (Recomendado)
+#### Paso 3: Instalar Dependencias
+```bash
+# Opción 1: Usando requirements.txt (recomendado)
+pip install -r requirements.txt
+
+# Opción 2: Instalación manual
+pip install PySide6 pybit requests
+```
+
+#### Paso 4: Crear Entorno Virtual (Opcional pero Recomendado)
 ```bash
 # Crear entorno virtual
 python -m venv venv
@@ -57,24 +85,41 @@ python -m venv venv
 venv\Scripts\activate
 # En macOS/Linux:
 source venv/bin/activate
-```
 
-### Paso 4: Instalar Dependencias
-```bash
-pip install PySide6 pybit requests
+# Instalar dependencias en el entorno virtual
+pip install -r requirements.txt
 ```
 
 ## 🚀 Cómo Ejecutar la Aplicación
 
-### Método 1: Ejecución Directa
+### Método 1: Script de Ejecución (Recomendado)
+```bash
+python run.py
+```
+Este script verifica automáticamente las dependencias antes de ejecutar la aplicación.
+
+### Método 2: Ejecución Directa
 ```bash
 python pyside_trading_gui.py
 ```
 
-### Método 2: Desde el Directorio
+### Método 3: Desde el Directorio
 ```bash
 cd slltp-automatico-codavidgarcia
 python pyside_trading_gui.py
+```
+
+### Con Entorno Virtual
+Si creaste un entorno virtual, primero actívalo:
+```bash
+# Windows
+venv\Scripts\activate
+
+# macOS/Linux
+source venv/bin/activate
+
+# Luego ejecuta la aplicación
+python run.py
 ```
 
 ## ⚙️ Configuración Inicial
