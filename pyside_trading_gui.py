@@ -114,6 +114,30 @@ class TradingWorker(QObject):
         if self.trading_engine:
             self.trading_engine.stop_trading()
 
+    def update_sl_amount(self, new_amount: float):
+        """Update SL amount in real-time"""
+        self.sl_amount = new_amount
+        if self.trading_engine and hasattr(self.trading_engine, 'update_sl_amount'):
+            self.trading_engine.update_sl_amount(new_amount)
+
+    def update_tp_percentage(self, new_percentage: float):
+        """Update TP percentage in real-time"""
+        self.tp_percentage = new_percentage
+        if self.trading_engine and hasattr(self.trading_engine, 'update_tp_percentage'):
+            self.trading_engine.update_tp_percentage(new_percentage)
+
+    def update_sl_enabled(self, enabled: bool):
+        """Update SL enabled state in real-time"""
+        self.sl_enabled = enabled
+        if self.trading_engine and hasattr(self.trading_engine, 'update_sl_enabled'):
+            self.trading_engine.update_sl_enabled(enabled)
+
+    def update_tp_enabled(self, enabled: bool):
+        """Update TP enabled state in real-time"""
+        self.tp_enabled = enabled
+        if self.trading_engine and hasattr(self.trading_engine, 'update_tp_enabled'):
+            self.trading_engine.update_tp_enabled(enabled)
+
 
 class PySideTradingGUI(QMainWindow):
     """Professional Trading Bot GUI using PySide6"""
@@ -131,6 +155,11 @@ class PySideTradingGUI(QMainWindow):
         self.trading_thread = None
         self.trading_engine = None
         self.is_trading_active = False  # Track actual trading state
+
+        # Thread management
+        self.connection_worker = None
+        self.connection_thread = None
+        self.active_threads = []  # Track all active threads
         
         # Setup UI
         self.setup_ui()
@@ -147,7 +176,38 @@ class PySideTradingGUI(QMainWindow):
         self.add_log("🚀 Application started successfully")
 
         print("✅ PySide6 GUI initialized successfully!")
-    
+
+    def closeEvent(self, event):
+        """Handle application close event - clean up threads"""
+        print("🔄 Cerrando aplicación y limpiando recursos...")
+
+        # Stop trading if active
+        if self.is_trading_active:
+            self.stop_trading()
+
+        # Clean up connection thread
+        if self.connection_thread and self.connection_thread.isRunning():
+            self.connection_thread.quit()
+            self.connection_thread.wait(3000)  # Wait up to 3 seconds
+
+        # Clean up trading thread
+        if self.trading_thread and self.trading_thread.isRunning():
+            self.trading_thread.quit()
+            self.trading_thread.wait(3000)  # Wait up to 3 seconds
+
+        # Clean up any other active threads
+        for thread in self.active_threads:
+            if thread and thread.isRunning():
+                thread.quit()
+                thread.wait(1000)  # Wait up to 1 second each
+
+        # Stop trading engine
+        if self.trading_engine and hasattr(self.trading_engine, 'stop_trading'):
+            self.trading_engine.stop_trading()
+
+        print("✅ Recursos limpiados correctamente")
+        event.accept()
+
     def setup_ui(self):
         """Setup the user interface"""
         self.setWindowTitle("🚀 SL y TP Automático en Bybit")
@@ -768,6 +828,7 @@ class PySideTradingGUI(QMainWindow):
             }
         """)
         self.sl_checkbox.stateChanged.connect(self.update_automation_status)
+        self.sl_checkbox.stateChanged.connect(self.on_sl_checkbox_changed)
         sl_header_layout.addWidget(self.sl_checkbox)
         sl_header_layout.addStretch()
         sl_layout.addLayout(sl_header_layout)
@@ -802,6 +863,8 @@ class PySideTradingGUI(QMainWindow):
                 border-color: #c0392b;
             }
         """)
+        # Connect to auto-update function
+        self.sl_amount_input.textChanged.connect(self.on_sl_value_changed)
         sl_input_layout.addWidget(self.sl_amount_input)
 
         usdt_label = QLabel("USDT")
@@ -849,6 +912,7 @@ class PySideTradingGUI(QMainWindow):
             }
         """)
         self.tp_checkbox.stateChanged.connect(self.update_automation_status)
+        self.tp_checkbox.stateChanged.connect(self.on_tp_checkbox_changed)
         tp_header_layout.addWidget(self.tp_checkbox)
         tp_header_layout.addStretch()
         tp_layout.addLayout(tp_header_layout)
@@ -883,6 +947,8 @@ class PySideTradingGUI(QMainWindow):
                 border-color: #1e8449;
             }
         """)
+        # Connect to auto-update function
+        self.tp_percentage_input.textChanged.connect(self.on_tp_value_changed)
         tp_input_layout.addWidget(self.tp_percentage_input)
 
         percent_label = QLabel("%")
@@ -953,6 +1019,58 @@ class PySideTradingGUI(QMainWindow):
 
         # Initialize compact status indicators
         self.update_automation_status()
+
+    def on_sl_value_changed(self, text):
+        """Handle SL value change - update live trading if active"""
+        if not self.is_trading_active or not self.trading_worker:
+            return
+
+        try:
+            sl_amount = float(text) if text else 0.0
+            if sl_amount > 0 and self.sl_checkbox.isChecked():
+                # Update SL in real-time
+                if hasattr(self.trading_worker, 'update_sl_amount'):
+                    self.trading_worker.update_sl_amount(sl_amount)
+                    self.add_log(f"🛡️ SL actualizado en vivo: ${sl_amount:.2f} USDT")
+        except ValueError:
+            pass  # Invalid number, ignore
+
+    def on_tp_value_changed(self, text):
+        """Handle TP value change - update live trading if active"""
+        if not self.is_trading_active or not self.trading_worker:
+            return
+
+        try:
+            tp_percentage = float(text) if text else 0.0
+            if tp_percentage > 0 and self.tp_checkbox.isChecked():
+                # Update TP in real-time
+                if hasattr(self.trading_worker, 'update_tp_percentage'):
+                    self.trading_worker.update_tp_percentage(tp_percentage)
+                    self.add_log(f"💰 TP actualizado en vivo: {tp_percentage:.2f}%")
+        except ValueError:
+            pass  # Invalid number, ignore
+
+    def on_sl_checkbox_changed(self, state):
+        """Handle SL checkbox change - enable/disable SL in real-time"""
+        if not self.is_trading_active or not self.trading_worker:
+            return
+
+        enabled = state == 2  # Qt.Checked
+        if hasattr(self.trading_worker, 'update_sl_enabled'):
+            self.trading_worker.update_sl_enabled(enabled)
+            status = "activado" if enabled else "desactivado"
+            self.add_log(f"🛡️ SL {status} en vivo")
+
+    def on_tp_checkbox_changed(self, state):
+        """Handle TP checkbox change - enable/disable TP in real-time"""
+        if not self.is_trading_active or not self.trading_worker:
+            return
+
+        enabled = state == 2  # Qt.Checked
+        if hasattr(self.trading_worker, 'update_tp_enabled'):
+            self.trading_worker.update_tp_enabled(enabled)
+            status = "activado" if enabled else "desactivado"
+            self.add_log(f"💰 TP {status} en vivo")
 
     def create_positions_section(self, parent_layout):
         """Create compact positions section optimized for vertical space"""
@@ -1729,9 +1847,17 @@ class PySideTradingGUI(QMainWindow):
         self.test_btn.setEnabled(False)
         self.test_btn.setText("Testing...")
 
+        # Clean up previous connection thread if exists
+        if self.connection_thread and self.connection_thread.isRunning():
+            self.connection_thread.quit()
+            self.connection_thread.wait(1000)
+
         # Create worker and thread
         self.connection_worker = ConnectionTestWorker(api_key, api_secret)
         self.connection_thread = QThread()
+
+        # Track thread
+        self.active_threads.append(self.connection_thread)
 
         self.connection_worker.moveToThread(self.connection_thread)
         self.connection_thread.started.connect(self.connection_worker.run)
@@ -1739,6 +1865,7 @@ class PySideTradingGUI(QMainWindow):
         self.connection_worker.finished.connect(self.connection_thread.quit)
         self.connection_worker.finished.connect(self.connection_worker.deleteLater)
         self.connection_thread.finished.connect(self.connection_thread.deleteLater)
+        self.connection_thread.finished.connect(lambda: self.active_threads.remove(self.connection_thread) if self.connection_thread in self.active_threads else None)
 
         self.connection_thread.start()
 
@@ -1801,16 +1928,25 @@ class PySideTradingGUI(QMainWindow):
             except Exception as e:
                 self.add_log(f"⚠️ No se pudo inicializar el motor de posiciones: {e}")
 
+        # Clean up previous trading thread if exists
+        if self.trading_thread and self.trading_thread.isRunning():
+            self.trading_thread.quit()
+            self.trading_thread.wait(2000)
+
         # Create trading worker
         self.trading_worker = TradingWorker(
             self.config_manager, symbol, sl_enabled, sl_amount, tp_enabled, tp_percentage
         )
         self.trading_thread = QThread()
 
+        # Track thread
+        self.active_threads.append(self.trading_thread)
+
         self.trading_worker.moveToThread(self.trading_thread)
         self.trading_thread.started.connect(self.trading_worker.start_trading)
         self.trading_worker.finished.connect(self.on_trading_finished)
         self.trading_worker.log_message.connect(self.add_log)
+        self.trading_thread.finished.connect(lambda: self.active_threads.remove(self.trading_thread) if self.trading_thread in self.active_threads else None)
 
         self.trading_thread.start()
 

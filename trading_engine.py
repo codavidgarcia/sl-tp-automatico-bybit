@@ -544,7 +544,33 @@ class TradingEngine:
             if self.thread:
                 self.thread.join(timeout=5)
             self.log("Trading stopped")
-    
+
+    def update_sl_amount(self, new_amount: float):
+        """Update stop loss amount in real-time"""
+        old_amount = self.stop_loss_amount
+        self.stop_loss_amount = new_amount
+        self.log(f"🛡️ SL actualizado: ${old_amount:.2f} → ${new_amount:.2f} USDT")
+
+    def update_tp_percentage(self, new_percentage: float):
+        """Update take profit percentage in real-time"""
+        old_percentage = self.take_profit_percentage
+        self.take_profit_percentage = new_percentage
+        self.log(f"💰 TP actualizado: {old_percentage:.2f}% → {new_percentage:.2f}%")
+
+    def update_sl_enabled(self, enabled: bool):
+        """Update SL enabled state in real-time"""
+        old_state = self.stop_loss_enabled
+        self.stop_loss_enabled = enabled
+        status = "activado" if enabled else "desactivado"
+        self.log(f"🛡️ SL {status} (era: {'activado' if old_state else 'desactivado'})")
+
+    def update_tp_enabled(self, enabled: bool):
+        """Update TP enabled state in real-time"""
+        old_state = self.take_profit_enabled
+        self.take_profit_enabled = enabled
+        status = "activado" if enabled else "desactivado"
+        self.log(f"💰 TP {status} (era: {'activado' if old_state else 'desactivado'})")
+
     def is_running(self) -> bool:
         """Check if trading is running"""
         return self.running
