@@ -94,6 +94,24 @@ def get_platform_config():
         'pybit',
         'requests'
     ]
+
+    # Módulos a excluir (problemáticos o innecesarios)
+    config['excludes'] = [
+        'PySide6.QtWebEngine',
+        'PySide6.QtWebEngineCore',
+        'PySide6.QtWebEngineWidgets',
+        'PySide6.Qt3DCore',
+        'PySide6.Qt3DRender',
+        'PySide6.QtQuick',
+        'PySide6.QtQml',
+        'PySide6.QtMultimedia',
+        'PySide6.QtMultimediaWidgets',
+        'PySide6.QtCharts',
+        'PySide6.QtDataVisualization',
+        'matplotlib',
+        'numpy',
+        'scipy'
+    ]
     
     # Configuración específica por plataforma
     if system == 'windows':
@@ -130,9 +148,15 @@ def build_executable():
     # Agregar imports ocultos
     for imp in config['hidden_imports']:
         cmd.extend(['--hidden-import', imp])
-    
-    # Coleccionar PySide6 completo
-    cmd.extend(['--collect-all', 'PySide6'])
+
+    # Excluir módulos problemáticos
+    for exc in config.get('excludes', []):
+        cmd.extend(['--exclude-module', exc])
+
+    # Coleccionar solo los módulos necesarios de PySide6
+    cmd.extend(['--collect-submodules', 'PySide6.QtCore'])
+    cmd.extend(['--collect-submodules', 'PySide6.QtWidgets'])
+    cmd.extend(['--collect-submodules', 'PySide6.QtGui'])
     
     # Script principal
     cmd.append(config['script'])
