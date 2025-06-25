@@ -830,6 +830,20 @@ class PySideTradingGUI(QMainWindow):
         self.sl_checkbox.stateChanged.connect(self.update_automation_status)
         self.sl_checkbox.stateChanged.connect(self.on_sl_checkbox_changed)
         sl_header_layout.addWidget(self.sl_checkbox)
+
+        # SL Order Status Indicator
+        self.sl_order_indicator = QLabel("●")
+        self.sl_order_indicator.setStyleSheet("""
+            QLabel {
+                color: #95a5a6;
+                font-size: 12px;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+        """)
+        self.sl_order_indicator.setToolTip("Estado de la orden SL en Bybit")
+        sl_header_layout.addWidget(self.sl_order_indicator)
+
         sl_header_layout.addStretch()
         sl_layout.addLayout(sl_header_layout)
 
@@ -914,6 +928,20 @@ class PySideTradingGUI(QMainWindow):
         self.tp_checkbox.stateChanged.connect(self.update_automation_status)
         self.tp_checkbox.stateChanged.connect(self.on_tp_checkbox_changed)
         tp_header_layout.addWidget(self.tp_checkbox)
+
+        # TP Order Status Indicator
+        self.tp_order_indicator = QLabel("●")
+        self.tp_order_indicator.setStyleSheet("""
+            QLabel {
+                color: #95a5a6;
+                font-size: 12px;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+        """)
+        self.tp_order_indicator.setToolTip("Estado de la orden TP en Bybit")
+        tp_header_layout.addWidget(self.tp_order_indicator)
+
         tp_header_layout.addStretch()
         tp_layout.addLayout(tp_header_layout)
 
@@ -1019,6 +1047,7 @@ class PySideTradingGUI(QMainWindow):
 
         # Initialize compact status indicators
         self.update_automation_status()
+        self.update_order_indicators()
 
     def on_sl_value_changed(self, text):
         """Handle SL value change - update live trading if active"""
@@ -1061,6 +1090,9 @@ class PySideTradingGUI(QMainWindow):
             status = "activado" if enabled else "desactivado"
             self.add_log(f"🛡️ SL {status} en vivo")
 
+        # Update visual indicator
+        self.update_order_indicators()
+
     def on_tp_checkbox_changed(self, state):
         """Handle TP checkbox change - enable/disable TP in real-time"""
         if not self.is_trading_active or not self.trading_worker:
@@ -1071,6 +1103,55 @@ class PySideTradingGUI(QMainWindow):
             self.trading_worker.update_tp_enabled(enabled)
             status = "activado" if enabled else "desactivado"
             self.add_log(f"💰 TP {status} en vivo")
+
+        # Update visual indicator
+        self.update_order_indicators()
+
+    def update_order_indicators(self):
+        """Update visual indicators for order status"""
+        # SL Indicator
+        if self.is_trading_active and self.sl_checkbox.isChecked():
+            self.sl_order_indicator.setStyleSheet("""
+                QLabel {
+                    color: #e74c3c;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-left: 5px;
+                }
+            """)
+            self.sl_order_indicator.setToolTip("🛡️ Orden SL activa en Bybit")
+        else:
+            self.sl_order_indicator.setStyleSheet("""
+                QLabel {
+                    color: #95a5a6;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-left: 5px;
+                }
+            """)
+            self.sl_order_indicator.setToolTip("⚪ SL inactivo")
+
+        # TP Indicator
+        if self.is_trading_active and self.tp_checkbox.isChecked():
+            self.tp_order_indicator.setStyleSheet("""
+                QLabel {
+                    color: #27ae60;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-left: 5px;
+                }
+            """)
+            self.tp_order_indicator.setToolTip("💰 Orden TP activa en Bybit")
+        else:
+            self.tp_order_indicator.setStyleSheet("""
+                QLabel {
+                    color: #95a5a6;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-left: 5px;
+                }
+            """)
+            self.tp_order_indicator.setToolTip("⚪ TP inactivo")
 
     def create_positions_section(self, parent_layout):
         """Create compact positions section optimized for vertical space"""
@@ -1970,6 +2051,9 @@ class PySideTradingGUI(QMainWindow):
     def on_trading_finished(self, success: bool, message: str):
         """Handle trading finished"""
         if success:
+            self.is_trading_active = True
+            self.update_automation_status()
+            self.update_order_indicators()
             self.add_log("✅ Trading started successfully")
         else:
             QMessageBox.critical(self, "Error", f"Failed to start trading: {message}")
@@ -1980,6 +2064,8 @@ class PySideTradingGUI(QMainWindow):
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.is_trading_active = False
+        self.update_automation_status()
+        self.update_order_indicators()
         self.status_label.setText("⏸️ Stopped")
         self.statusBar().showMessage("Stopped")
         self.add_log("⏹️ Trading stopped")

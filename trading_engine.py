@@ -551,11 +551,63 @@ class TradingEngine:
         self.stop_loss_amount = new_amount
         self.log(f"🛡️ SL actualizado: ${old_amount:.2f} → ${new_amount:.2f} USDT")
 
+        # Update actual SL order if position exists and SL is enabled
+        if self.stop_loss_enabled and self.running:
+            try:
+                position = self.get_position_info(self.symbol)
+                if position and float(position['size']) != 0:
+                    entry_price = float(position['avgPrice'])
+                    side = position['side']
+
+                    # Calculate new SL price
+                    if side == 'Buy':
+                        sl_price = entry_price - new_amount
+                    else:  # Sell
+                        sl_price = entry_price + new_amount
+
+                    # Set new stop loss
+                    if self.set_stop_loss(self.symbol, sl_price):
+                        self.log(f"✅ Orden SL actualizada en Bybit: ${sl_price:.2f}")
+                    else:
+                        self.log(f"❌ Error actualizando orden SL en Bybit")
+            except Exception as e:
+                self.log(f"❌ Error actualizando SL en vivo: {e}")
+
     def update_tp_percentage(self, new_percentage: float):
         """Update take profit percentage in real-time"""
         old_percentage = self.take_profit_percentage
         self.take_profit_percentage = new_percentage
         self.log(f"💰 TP actualizado: {old_percentage:.2f}% → {new_percentage:.2f}%")
+
+        # Update actual TP order if position exists and TP is enabled
+        if self.take_profit_enabled and self.running:
+            try:
+                position = self.get_position_info(self.symbol)
+                if position and float(position['size']) != 0:
+                    entry_price = float(position['avgPrice'])
+                    side = position['side']
+                    qty = abs(float(position['size']))
+
+                    # Calculate new TP price
+                    if side == 'Buy':
+                        tp_price = entry_price * (1 + new_percentage / 100)
+                    else:  # Sell
+                        tp_price = entry_price * (1 - new_percentage / 100)
+
+                    # Cancel existing TP order if exists
+                    if self.take_profit_order_id:
+                        self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
+                        self.take_profit_order_id = ''
+
+                    # Set new take profit
+                    new_order_id = self.set_take_profit(self.symbol, tp_price, side, qty)
+                    if new_order_id:
+                        self.take_profit_order_id = new_order_id
+                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f}")
+                    else:
+                        self.log(f"❌ Error actualizando orden TP en Bybit")
+            except Exception as e:
+                self.log(f"❌ Error actualizando TP en vivo: {e}")
 
     def update_sl_enabled(self, enabled: bool):
         """Update SL enabled state in real-time"""
@@ -564,12 +616,72 @@ class TradingEngine:
         status = "activado" if enabled else "desactivado"
         self.log(f"🛡️ SL {status} (era: {'activado' if old_state else 'desactivado'})")
 
+        # Apply change immediately if position exists
+        if self.running:
+            try:
+                position = self.get_position_info(self.symbol)
+                if position and float(position['size']) != 0:
+                    if enabled:
+                        # Enable SL - set new stop loss
+                        entry_price = float(position['avgPrice'])
+                        side = position['side']
+
+                        if side == 'Buy':
+                            sl_price = entry_price - self.stop_loss_amount
+                        else:  # Sell
+                            sl_price = entry_price + self.stop_loss_amount
+
+                        if self.set_stop_loss(self.symbol, sl_price):
+                            self.log(f"✅ SL activado en Bybit: ${sl_price:.2f}")
+                    else:
+                        # Disable SL - cancel existing stop loss orders
+                        try:
+                            self.session.cancel_all_orders(
+                                category="linear",
+                                symbol=self.symbol,
+                                orderFilter="StopOrder"
+                            )
+                            self.log(f"✅ SL desactivado - órdenes canceladas")
+                        except Exception as e:
+                            self.log(f"⚠️ Error cancelando SL: {e}")
+            except Exception as e:
+                self.log(f"❌ Error actualizando estado SL: {e}")
+
     def update_tp_enabled(self, enabled: bool):
         """Update TP enabled state in real-time"""
         old_state = self.take_profit_enabled
         self.take_profit_enabled = enabled
         status = "activado" if enabled else "desactivado"
         self.log(f"💰 TP {status} (era: {'activado' if old_state else 'desactivado'})")
+
+        # Apply change immediately if position exists
+        if self.running:
+            try:
+                position = self.get_position_info(self.symbol)
+                if position and float(position['size']) != 0:
+                    if enabled:
+                        # Enable TP - set new take profit
+                        entry_price = float(position['avgPrice'])
+                        side = position['side']
+                        qty = abs(float(position['size']))
+
+                        if side == 'Buy':
+                            tp_price = entry_price * (1 + self.take_profit_percentage / 100)
+                        else:  # Sell
+                            tp_price = entry_price * (1 - self.take_profit_percentage / 100)
+
+                        new_order_id = self.set_take_profit(self.symbol, tp_price, side, qty)
+                        if new_order_id:
+                            self.take_profit_order_id = new_order_id
+                            self.log(f"✅ TP activado en Bybit: ${tp_price:.2f}")
+                    else:
+                        # Disable TP - cancel existing take profit order
+                        if self.take_profit_order_id:
+                            self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
+                            self.take_profit_order_id = ''
+                            self.log(f"✅ TP desactivado - orden cancelada")
+            except Exception as e:
+                self.log(f"❌ Error actualizando estado TP: {e}")
 
     def is_running(self) -> bool:
         """Check if trading is running"""
