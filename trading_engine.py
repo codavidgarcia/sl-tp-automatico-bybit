@@ -277,7 +277,66 @@ class TradingEngine:
         except Exception as e:
             self.log(f"Error setting take profit: {e}")
             return None
-    
+
+    def set_take_profit_with_trading_stop(self, symbol: str, price: float) -> bool:
+        """Set take profit using trading stop (similar to stop loss) for real-time updates"""
+        try:
+            price = self.qty_step(symbol, price)
+
+            # Check if take profit already exists at this price
+            position_info = self.get_position_info(symbol)
+            if position_info:
+                current_tp = position_info.get('takeProfit', '')
+                if current_tp and abs(float(current_tp) - price) < 0.01:
+                    self.log(f"Take profit already set at {current_tp}, skipping")
+                    return True
+
+            self.log(f"Setting take profit at {price}")
+
+            # Detect position mode automatically
+            position_idx = self.detect_position_mode(symbol)
+
+            order = self.session.set_trading_stop(
+                category="linear",
+                symbol=symbol,
+                takeProfit=price,
+                tpTriggerBy="LastPrice",
+                positionIdx=position_idx,
+            )
+
+            # If it fails with position mode error, try other modes
+            if order.get('retCode') == 10001:
+                self.log("Position mode mismatch, trying alternative modes...")
+
+                # Try all possible position indices
+                for idx in [0, 1, 2]:
+                    if idx != position_idx:
+                        self.log(f"Trying position index {idx}")
+                        order = self.session.set_trading_stop(
+                            category="linear",
+                            symbol=symbol,
+                            takeProfit=price,
+                            tpTriggerBy="LastPrice",
+                            positionIdx=idx,
+                        )
+                        if order.get('retCode') == 0:
+                            self.position_mode = idx  # Update detected mode
+                            break
+
+            if order.get('retCode') == 0:
+                self.log("Take profit set successfully")
+                return True
+            elif order.get('retCode') == 34040:
+                self.log("Take profit already configured at this price")
+                return True  # Consider this a success
+            else:
+                self.log(f"Failed to set take profit: {order.get('retMsg', 'Unknown error')}")
+                return False
+
+        except Exception as e:
+            self.log(f"Error setting take profit: {e}")
+            return False
+
     def get_position_info(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Get current position information"""
         try:
@@ -658,26 +717,27 @@ class TradingEngine:
                     side = position['side']
 
                     # Calculate new TP price
-                    if side == 'Buy':
-                        tp_price = entry_price * (1 + new_percentage / 100)
-                    else:  # Sell
-                        tp_price = entry_price * (1 - new_percentage / 100)
+                    if side == 'Buy':  # Long position - TP above entry price
+                        tp_price = entry_price + ((entry_price * new_percentage) / 100)
+                    else:  # Short position (Sell) - TP below entry price
+                        tp_price = entry_price - ((entry_price * new_percentage) / 100)
 
-                    # Cancel existing TP order if exists
-                    if self.take_profit_order_id:
-                        self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
-                        self.take_profit_order_id = ''
-                        self.log(f"🧹 TP anterior cancelado: {self.take_profit_order_id}")
+                    # Force update by clearing existing TP first, then setting new one
+                    try:
+                        # Clear existing take profit
+                        self.session.set_trading_stop(
+                            category="linear",
+                            symbol=self.symbol,
+                            takeProfit="",
+                            positionIdx=self.detect_position_mode(self.symbol)
+                        )
+                        self.log(f"🧹 TP anterior limpiado")
+                    except:
+                        pass  # Continue even if clearing fails
 
-                    # Ensure we use the full position size
-                    full_qty = abs(float(position['size']))
-                    self.log(f"📊 Actualizando TP para cantidad completa: {full_qty}")
-
-                    # Set new take profit with full quantity
-                    new_order_id = self.set_take_profit(self.symbol, tp_price, side, full_qty)
-                    if new_order_id:
-                        self.take_profit_order_id = new_order_id
-                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f} para {full_qty} {side}")
+                    # Set new take profit using trading stop
+                    if self.set_take_profit_with_trading_stop(self.symbol, tp_price):
+                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f}")
                     else:
                         self.log(f"❌ Error actualizando orden TP en Bybit")
             except Exception as e:
@@ -734,26 +794,30 @@ class TradingEngine:
                 position = self.get_position_info(self.symbol)
                 if position and float(position['size']) != 0:
                     if enabled:
-                        # Enable TP - set new take profit
+                        # Enable TP - set new take profit using trading stop
                         entry_price = float(position['avgPrice'])
                         side = position['side']
-                        qty = abs(float(position['size']))
 
-                        if side == 'Buy':
-                            tp_price = entry_price * (1 + self.take_profit_percentage / 100)
-                        else:  # Sell
-                            tp_price = entry_price * (1 - self.take_profit_percentage / 100)
+                        # Calculate TP price correctly for each side
+                        if side == 'Buy':  # Long position - TP above entry price
+                            tp_price = entry_price + ((entry_price * self.take_profit_percentage) / 100)
+                        else:  # Short position (Sell) - TP below entry price
+                            tp_price = entry_price - ((entry_price * self.take_profit_percentage) / 100)
 
-                        new_order_id = self.set_take_profit(self.symbol, tp_price, side, qty)
-                        if new_order_id:
-                            self.take_profit_order_id = new_order_id
+                        if self.set_take_profit_with_trading_stop(self.symbol, tp_price):
                             self.log(f"✅ TP activado en Bybit: ${tp_price:.2f}")
                     else:
-                        # Disable TP - cancel existing take profit order
-                        if self.take_profit_order_id:
-                            self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
-                            self.take_profit_order_id = ''
-                            self.log(f"✅ TP desactivado - orden cancelada")
+                        # Disable TP - clear existing take profit using trading stop
+                        try:
+                            self.session.set_trading_stop(
+                                category="linear",
+                                symbol=self.symbol,
+                                takeProfit="",
+                                positionIdx=self.detect_position_mode(self.symbol)
+                            )
+                            self.log(f"✅ TP desactivado - orden limpiada")
+                        except Exception as e:
+                            self.log(f"⚠️ Error desactivando TP: {e}")
             except Exception as e:
                 self.log(f"❌ Error actualizando estado TP: {e}")
 

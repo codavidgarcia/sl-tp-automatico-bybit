@@ -2274,6 +2274,7 @@ class PySideTradingGUI(QMainWindow):
         # Direct content without nested frames
         features_content = QLabel("""
         • Stop Loss y Take Profit en una sola aplicación<br>
+        • Actualización automática de SL / TP en vivo y durante un trade abierto
         • Interfaz gráfica pensada para satisfacer a usuarios novatos y avanzados<br>
         • Soporte para modo hedge (cobertura) de Bybit<br>
         • Detección automática y auto-configuración de funcionamiento en caso de modo cobertura<br>
