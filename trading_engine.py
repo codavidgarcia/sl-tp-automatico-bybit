@@ -4,6 +4,7 @@ from pybit.unified_trading import HTTP
 from decimal import Decimal, ROUND_DOWN, ROUND_FLOOR
 from typing import Optional, Dict, Any, Callable, List
 import queue
+import requests
 
 
 class TradingEngine:
@@ -34,21 +35,64 @@ class TradingEngine:
         # Communication
         self.log_queue = queue.Queue()
         self.status_callback = None
+        self.last_time_check = 0  # Track last time sync check
+
+    def check_time_sync(self) -> bool:
+        """Check if local time is synchronized with Bybit server time"""
+        try:
+            # Get Bybit server time
+            server_time_response = self.session.get_server_time()
+            server_time = int(server_time_response['result']['timeSecond'])
+
+            # Get local time
+            local_time = int(time.time())
+
+            # Calculate difference
+            time_diff = abs(server_time - local_time)
+
+            self.log(f"⏰ Diferencia de tiempo: {time_diff} segundos")
+
+            if time_diff > 30:  # More than 30 seconds difference
+                self.log(f"⚠️ ADVERTENCIA: Reloj desincronizado ({time_diff}s)")
+                self.log("💡 Recomendación: Sincronizar reloj del sistema")
+                return False
+            elif time_diff > 10:  # More than 10 seconds difference
+                self.log(f"⚠️ Diferencia de tiempo notable: {time_diff}s")
+                return True
+            else:
+                self.log(f"✅ Tiempo sincronizado correctamente")
+                return True
+
+        except Exception as e:
+            self.log(f"❌ Error verificando sincronización: {e}")
+            return True  # Continue anyway
 
     def initialize_session(self) -> bool:
-        """Initialize Bybit session"""
+        """Initialize Bybit session with time sync check"""
         try:
             self.session = HTTP(
                 testnet=self.testnet,
                 api_key=self.api_key,
                 api_secret=self.api_secret,
+                recv_window=60000,  # 60 seconds window to handle clock drift
             )
+
+            # Check time synchronization
+            self.check_time_sync()
+
             # Test connection
             self.session.get_wallet_balance(accountType="UNIFIED")
             self.log("Session initialized successfully")
             return True
         except Exception as e:
             self.log(f"Failed to initialize session: {e}")
+            # If it's a timestamp error, provide specific guidance
+            if "timestamp" in str(e).lower() or "time" in str(e).lower():
+                self.log("🕐 Error de tiempo detectado")
+                self.log("💡 Solución: Sincronizar reloj del sistema")
+                self.log("   • Windows: Configuración > Hora e idioma > Sincronizar")
+                self.log("   • macOS: Preferencias > Fecha y hora > Automático")
+                self.log("   • Linux: sudo ntpdate -s time.nist.gov")
             return False
     
     def log(self, message: str):
@@ -142,8 +186,15 @@ class TradingEngine:
                 return False
 
         except Exception as e:
-            self.log(f"Error setting stop loss: {e}")
-            return False
+            error_msg = str(e).lower()
+            if "timestamp" in error_msg or "time" in error_msg or "recv_window" in error_msg:
+                self.log(f"🕐 Error de sincronización al configurar SL: {e}")
+                self.log("💡 Verificando sincronización de tiempo...")
+                self.check_time_sync()
+                return False
+            else:
+                self.log(f"Error setting stop loss: {e}")
+                return False
     
     def cancel_take_profit_order(self, symbol: str, order_id: str) -> bool:
         """Cancel existing take profit order"""
@@ -460,10 +511,16 @@ class TradingEngine:
         
         while self.running:
             try:
+                # Periodic time sync check (every 5 minutes)
+                current_time = time.time()
+                if current_time - self.last_time_check > 300:  # 5 minutes
+                    self.check_time_sync()
+                    self.last_time_check = current_time
+
                 if not self.symbol:
                     time.sleep(1)
                     continue
-                    
+
                 position = self.get_position_info(self.symbol)
                 if not position:
                     time.sleep(1)

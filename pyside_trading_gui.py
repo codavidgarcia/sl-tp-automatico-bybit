@@ -2112,9 +2112,22 @@ class PySideTradingGUI(QMainWindow):
         self.update_automation_status()
 
     def add_log(self, message: str):
-        """Add message to log"""
+        """Add message to log with time sync warnings"""
         timestamp = time.strftime("%H:%M:%S")
         formatted_message = f"[{timestamp}] {message}"
+
+        # Check for time sync warnings and show popup
+        if "desincronizado" in message.lower() or "sincronizar reloj" in message.lower():
+            QMessageBox.warning(
+                self,
+                "⚠️ Advertencia de Sincronización",
+                f"Se detectó un problema de sincronización de tiempo:\n\n{message}\n\n"
+                "Para solucionarlo:\n"
+                "• Windows: Configuración > Hora e idioma > Sincronizar\n"
+                "• macOS: Preferencias > Fecha y hora > Automático\n"
+                "• Linux: sudo ntpdate -s time.nist.gov"
+            )
+
         self.log_display.append(formatted_message)
 
     def update_logs(self):
