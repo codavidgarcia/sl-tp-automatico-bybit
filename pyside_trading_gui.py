@@ -160,6 +160,15 @@ class PySideTradingGUI(QMainWindow):
         self.connection_worker = None
         self.connection_thread = None
         self.active_threads = []  # Track all active threads
+
+        # Debounce timers for input fields to prevent UI blocking
+        self.sl_debounce_timer = QTimer()
+        self.sl_debounce_timer.setSingleShot(True)
+        self.sl_debounce_timer.timeout.connect(self.apply_sl_change)
+
+        self.tp_debounce_timer = QTimer()
+        self.tp_debounce_timer.setSingleShot(True)
+        self.tp_debounce_timer.timeout.connect(self.apply_tp_change)
         
         # Setup UI
         self.setup_ui()
@@ -1050,10 +1059,23 @@ class PySideTradingGUI(QMainWindow):
         self.update_order_indicators()
 
     def on_sl_value_changed(self, text):
-        """Handle SL value change - update live trading if active"""
+        """Handle SL value change - use debounce to prevent UI blocking"""
         if not self.is_trading_active or not self.trading_worker:
             return
 
+        # Store the current text for later processing
+        self.pending_sl_value = text
+
+        # Restart the debounce timer (500ms delay)
+        self.sl_debounce_timer.stop()
+        self.sl_debounce_timer.start(500)
+
+    def apply_sl_change(self):
+        """Apply SL change after debounce delay"""
+        if not hasattr(self, 'pending_sl_value'):
+            return
+
+        text = self.pending_sl_value
         try:
             sl_amount = float(text) if text else 0.0
             if sl_amount > 0 and self.sl_checkbox.isChecked():
@@ -1065,10 +1087,23 @@ class PySideTradingGUI(QMainWindow):
             pass  # Invalid number, ignore
 
     def on_tp_value_changed(self, text):
-        """Handle TP value change - update live trading if active"""
+        """Handle TP value change - use debounce to prevent UI blocking"""
         if not self.is_trading_active or not self.trading_worker:
             return
 
+        # Store the current text for later processing
+        self.pending_tp_value = text
+
+        # Restart the debounce timer (500ms delay)
+        self.tp_debounce_timer.stop()
+        self.tp_debounce_timer.start(500)
+
+    def apply_tp_change(self):
+        """Apply TP change after debounce delay"""
+        if not hasattr(self, 'pending_tp_value'):
+            return
+
+        text = self.pending_tp_value
         try:
             tp_percentage = float(text) if text else 0.0
             if tp_percentage > 0 and self.tp_checkbox.isChecked():
@@ -1207,6 +1242,9 @@ class PySideTradingGUI(QMainWindow):
         # Auto-refresh timer
         self.positions_refresh_timer = QTimer()
         self.positions_refresh_timer.timeout.connect(self.refresh_positions)
+
+        # Start auto-refresh by default since checkbox is checked by default
+        self.positions_refresh_timer.start(5000)  # 5 seconds
 
 
 

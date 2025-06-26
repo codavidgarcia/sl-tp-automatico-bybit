@@ -565,6 +565,19 @@ class TradingEngine:
                     else:  # Sell
                         sl_price = entry_price + new_amount
 
+                    # Force update by clearing existing SL first, then setting new one
+                    try:
+                        # Clear existing stop loss
+                        self.session.set_trading_stop(
+                            category="linear",
+                            symbol=self.symbol,
+                            stopLoss="",
+                            positionIdx=self.detect_position_mode(self.symbol)
+                        )
+                        self.log(f"🧹 SL anterior limpiado")
+                    except:
+                        pass  # Continue even if clearing fails
+
                     # Set new stop loss
                     if self.set_stop_loss(self.symbol, sl_price):
                         self.log(f"✅ Orden SL actualizada en Bybit: ${sl_price:.2f}")
@@ -586,7 +599,6 @@ class TradingEngine:
                 if position and float(position['size']) != 0:
                     entry_price = float(position['avgPrice'])
                     side = position['side']
-                    qty = abs(float(position['size']))
 
                     # Calculate new TP price
                     if side == 'Buy':
@@ -598,12 +610,17 @@ class TradingEngine:
                     if self.take_profit_order_id:
                         self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
                         self.take_profit_order_id = ''
+                        self.log(f"🧹 TP anterior cancelado: {self.take_profit_order_id}")
 
-                    # Set new take profit
-                    new_order_id = self.set_take_profit(self.symbol, tp_price, side, qty)
+                    # Ensure we use the full position size
+                    full_qty = abs(float(position['size']))
+                    self.log(f"📊 Actualizando TP para cantidad completa: {full_qty}")
+
+                    # Set new take profit with full quantity
+                    new_order_id = self.set_take_profit(self.symbol, tp_price, side, full_qty)
                     if new_order_id:
                         self.take_profit_order_id = new_order_id
-                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f}")
+                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f} para {full_qty} {side}")
                     else:
                         self.log(f"❌ Error actualizando orden TP en Bybit")
             except Exception as e:
