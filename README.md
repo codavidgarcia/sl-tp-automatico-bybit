@@ -1,15 +1,5 @@
 # 🚀 SL y TP Automático para Bybit
 
-<div align="center">
-
-[![GitHub stars](https://img.shields.io/github/stars/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/network)
-[![Telegram](https://img.shields.io/badge/Telegram-@codavidgarcia-blue?style=social&logo=telegram)](https://t.me/codavidgarcia)
-
-[![⭐ Agradéceme con un Star (click aquí)](https://img.shields.io/badge/⭐-Agradéceme%20con%20una%20Estrella%20(click%20aquí)-yellow?style=for-the-badge)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
-
-</div>
-
 Aplicación de trading automatizada con interfaz gráfica moderna para gestionar Stop Loss (SL) y Take Profit (TP) automáticos en Bybit.
 
 ## 📋 Descripción
@@ -435,7 +425,7 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ### ⭐ ¡Dale una Estrella!
 Si esta aplicación te ha sido útil, **dale una estrella** para apoyar el desarrollo:
 
-[![⭐ Dale una Estrella](https://img.shields.io/badge/⭐-Dale%20una%20Estrella-yellow?style=for-the-badge&logo=github)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
+[![⭐ Dale una Estrella](https://img.shields.io/badge/⭐-Dale%20una%20Estrella-gold?style=for-the-badge&labelColor=black&color=gold&logo=github)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
 
 ### 💰 Donaciones
 Tu apoyo ayuda a mantener y mejorar esta herramienta:
