@@ -1,5 +1,13 @@
 # 🚀 SL y TP Automático para Bybit
 
+<div align="center">
+
+[![GitHub release](https://img.shields.io/github/v/release/codavidgarcia/sl-tp-automatico-bybit?style=social&logo=github)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/network)
+[![Telegram](https://img.shields.io/badge/Telegram-@codavidgarcia-blue?style=social&logo=telegram)](https://t.me/codavidgarcia)
+</div>
+
 Aplicación de trading automatizada con interfaz gráfica moderna para gestionar Stop Loss (SL) y Take Profit (TP) automáticos en Bybit.
 
 ## 📋 Descripción
@@ -24,29 +32,32 @@ Esta aplicación permite automatizar la gestión de Stop Loss y Take Profit en t
 ## 🚀 Descarga Rápida
 
 ### 📦 Ejecutables (No requiere Python)
-Descarga directa para usar inmediatamente:
+Descarga directa desde [GitHub Releases](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/latest):
 
-- **🪟 Windows**: [SL-TP-Automatico-Windows-v1.1.0.zip](dist/SL-TP-Automatico-Windows-v1.1.0.zip) *(~43MB)*
-- **🍎 macOS**: [SL-TP-Automatico-macOS-v1.1.0.zip](dist/SL-TP-Automatico-macOS-v1.1.0.zip) *(~43MB)*
-- **🐧 Linux**: [SL-TP-Automatico-Linux-v1.1.0.tar.gz](dist/SL-TP-Automatico-Linux-v1.1.0.tar.gz) *(~42MB)*
+- **🪟 Windows**: [SL-TP-Automatico-Windows-v1.1.0.zip](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-Windows-v1.1.0.zip) *(~43MB)*
+- **🍎 macOS**: [SL-TP-Automatico-macOS-v1.1.0.zip](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-macOS-v1.1.0.zip) *(~43MB)*
+- **🐧 Linux**: [SL-TP-Automatico-Linux-v1.1.0.tar.gz](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-Linux-v1.1.0.tar.gz) *(~42MB)*
 
 ### 🎯 Instrucciones de Instalación Rápida
 
 #### 🪟 **Windows**
-1. Descarga `SL-TP-Automatico-Windows-v1.1.0.zip`
+1. Descarga desde [GitHub Releases](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-Windows-v1.1.0.zip)
 2. Extrae el archivo `SL-TP-Automatico.exe`
 3. Ejecuta directamente (doble clic)
 4. Si aparece SmartScreen: "Más información" → "Ejecutar de todos modos"
 
 #### 🍎 **macOS**
-1. Descarga `SL-TP-Automatico-macOS-v1.1.0.zip`
+1. Descarga desde [GitHub Releases](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-macOS-v1.1.0.zip)
 2. Extrae `SL-TP-Automatico.app`
 3. Ejecuta directamente (doble clic)
 4. Si aparece advertencia: Sistema → Seguridad → "Abrir de todos modos"
 
 #### 🐧 **Linux**
 ```bash
-# Descargar y extraer
+# Descargar desde GitHub Releases
+wget https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-Linux-v1.1.0.tar.gz
+
+# Extraer
 tar -xzf SL-TP-Automatico-Linux-v1.1.0.tar.gz
 
 # Dar permisos de ejecución
@@ -78,12 +89,12 @@ requests>=2.25.0
 Si solo quieres usar la aplicación sin instalar Python:
 
 #### Windows
-1. Descarga `SL-TP-Automatico-Windows-v1.1.0.zip`
+1. Descarga desde [GitHub Releases](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-Windows-v1.1.0.zip)
 2. Extrae y ejecuta `SL-TP-Automatico.exe`
 3. ¡Listo! No necesitas Python ni dependencias
 
 #### macOS
-1. Descarga `SL-TP-Automatico-macOS-v1.1.0.zip`
+1. Descarga desde [GitHub Releases](https://github.com/codavidgarcia/sl-tp-automatico-bybit/releases/download/1.1.0/SL-TP-Automatico-macOS-v1.1.0.zip)
 2. Extrae y ejecuta `SL-TP-Automatico.app`
 3. ¡Listo! No necesitas Python ni dependencias
 
