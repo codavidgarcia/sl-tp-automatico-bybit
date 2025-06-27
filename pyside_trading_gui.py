@@ -1593,14 +1593,13 @@ class PySideTradingGUI(QMainWindow):
     def refresh_positions(self):
         """Refresh positions data"""
         if not MODULES_AVAILABLE:
-            QMessageBox.warning(self, "Advertencia", "Por favor agrega primero tus credenciales API para usar el SL/TP automático")
+            # Silently return if modules not available - user will see this in trading tab
             return
 
         # Initialize trading engine if not available
         if not self.trading_engine:
             if not self.config_manager or not self.config_manager.has_valid_credentials():
-                QMessageBox.warning(self, "Advertencia",
-                    "Please configure and test API credentials first in the API Configuration tab")
+                # Silently return if no credentials - user can configure them in API tab
                 return
 
             try:
