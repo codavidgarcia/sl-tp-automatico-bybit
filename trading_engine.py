@@ -1,14 +1,13 @@
 import time
 import threading
 from pybit.unified_trading import HTTP
-from decimal import Decimal, ROUND_DOWN, ROUND_FLOOR
-from typing import Optional, Dict, Any, Callable, List
+from decimal import Decimal, ROUND_FLOOR
+from typing import Optional, Dict, Any, List
 import queue
-import requests
 
 
 class TradingEngine:
-    """Unified trading engine that combines Stop Loss and Take Profit functionality"""
+    """Motor de trading unificado que combina funcionalidad de Stop Loss y Take Profit"""
     
     def __init__(self, api_key: str, api_secret: str, testnet: bool = False):
         self.api_key = api_key
@@ -22,20 +21,20 @@ class TradingEngine:
         self.symbol = ''
         self.stop_loss_enabled = False
         self.take_profit_enabled = False
-        self.stop_loss_amount = 0  # USDT amount
-        self.take_profit_percentage = 0  # Percentage
-        self.position_mode = None  # Will be detected automatically
-        
+        self.stop_loss_amount = 0
+        self.take_profit_percentage = 0
+        self.position_mode = None
+
         # Internal state
         self.position_capital = 0
         self.position_price = 0
         self.position_size = 0
         self.take_profit_order_id = ''
-        
+
         # Communication
         self.log_queue = queue.Queue()
         self.status_callback = None
-        self.last_time_check = 0  # Track last time sync check
+        self.last_time_check = 0
 
     def check_time_sync(self) -> bool:
         """Check if local time is synchronized with Bybit server time"""
@@ -52,11 +51,11 @@ class TradingEngine:
 
             self.log(f"⏰ Diferencia de tiempo: {time_diff} segundos")
 
-            if time_diff > 30:  # More than 30 seconds difference
+            if time_diff > 30:
                 self.log(f"⚠️ ADVERTENCIA: Reloj desincronizado ({time_diff}s)")
                 self.log("💡 Recomendación: Sincronizar reloj del sistema")
                 return False
-            elif time_diff > 10:  # More than 10 seconds difference
+            elif time_diff > 10:
                 self.log(f"⚠️ Diferencia de tiempo notable: {time_diff}s")
                 return True
             else:
@@ -65,7 +64,7 @@ class TradingEngine:
 
         except Exception as e:
             self.log(f"❌ Error verificando sincronización: {e}")
-            return True  # Continue anyway
+            return True
 
     def initialize_session(self) -> bool:
         """Initialize Bybit session with time sync check"""
@@ -82,10 +81,10 @@ class TradingEngine:
 
             # Test connection
             self.session.get_wallet_balance(accountType="UNIFIED")
-            self.log("Session initialized successfully")
+            self.log("Sesión inicializada exitosamente")
             return True
         except Exception as e:
-            self.log(f"Failed to initialize session: {e}")
+            self.log(f"Falló al inicializar sesión: {e}")
             # If it's a timestamp error, provide specific guidance
             if "timestamp" in str(e).lower() or "time" in str(e).lower():
                 self.log("🕐 Error de tiempo detectado")
@@ -114,7 +113,7 @@ class TradingEngine:
             result = float(operaciondec)
             return result
         except Exception as e:
-            self.log(f"Error calculating price step: {e}")
+            self.log(f"Error calculando paso de precio: {e}")
             return price
 
     def get_min_order_qty(self, symbol: str) -> float:
@@ -123,15 +122,15 @@ class TradingEngine:
             instruments = self.session.get_instruments_info(category="linear", symbol=symbol)
             if instruments.get('retCode') == 0 and instruments['result']['list']:
                 min_qty = float(instruments['result']['list'][0]['lotSizeFilter']['minOrderQty'])
-                self.log(f"Minimum order quantity for {symbol}: {min_qty}")
+                self.log(f"Cantidad mínima de orden para {symbol}: {min_qty}")
                 return min_qty
             return 0.001  # Default fallback
         except Exception as e:
-            self.log(f"Error getting min order qty: {e}")
+            self.log(f"Error obteniendo cantidad mínima de orden: {e}")
             return 0.001
 
     def set_stop_loss(self, symbol: str, price: float) -> bool:
-        """Set stop loss order with automatic position mode detection"""
+        """Establecer orden de stop loss con detección automática de modo de posición"""
         try:
             price = self.qty_step(symbol, price)
 
@@ -140,7 +139,7 @@ class TradingEngine:
             if position_info:
                 current_sl = position_info.get('stopLoss', '')
                 if current_sl and abs(float(current_sl) - price) < 0.01:
-                    self.log(f"Stop loss already set at {current_sl}, skipping")
+                    self.log(f"Stop loss ya establecido en {current_sl}, omitiendo")
                     return True
 
             self.log(f"Setting stop loss at {price}")
@@ -158,7 +157,7 @@ class TradingEngine:
 
             # If it fails with position mode error, try other modes
             if order.get('retCode') == 10001:
-                self.log("Position mode mismatch, trying alternative modes...")
+                self.log("Modo de posición no coincide, probando modos alternativos...")
 
                 # Try all possible position indices
                 for idx in [0, 1, 2]:
@@ -176,13 +175,13 @@ class TradingEngine:
                             break
 
             if order.get('retCode') == 0:
-                self.log("Stop loss set successfully")
+                self.log("Stop loss establecido exitosamente")
                 return True
             elif order.get('retCode') == 34040:
                 self.log("Stop loss already configured at this price")
                 return True  # Consider this a success
             else:
-                self.log(f"Failed to set stop loss: {order.get('retMsg', 'Unknown error')}")
+                self.log(f"Falló al establecer stop loss: {order.get('retMsg', 'Error desconocido')}")
                 return False
 
         except Exception as e:
@@ -193,7 +192,7 @@ class TradingEngine:
                 self.check_time_sync()
                 return False
             else:
-                self.log(f"Error setting stop loss: {e}")
+                self.log(f"Error estableciendo stop loss: {e}")
                 return False
     
     def cancel_take_profit_order(self, symbol: str, order_id: str) -> bool:
@@ -207,11 +206,61 @@ class TradingEngine:
             )
             return order.get('retCode') == 0
         except Exception as e:
-            self.log(f"Error cancelling take profit: {e}")
+            self.log(f"Error cancelando take profit: {e}")
+            return False
+
+    def cancel_all_tp_orders(self, symbol: str) -> bool:
+        """Cancel ALL existing TP orders for exclusive control"""
+        try:
+            self.log("🧹 Cancelando TODAS las órdenes TP existentes para control exclusivo...")
+
+            # Get all open orders for this symbol
+            orders = self.session.get_open_orders(category="linear", symbol=symbol)
+
+            if orders.get('retCode') != 0:
+                self.log(f"Error obteniendo órdenes: {orders.get('retMsg', 'Error desconocido')}")
+                return False
+
+            tp_orders_cancelled = 0
+            order_list = orders.get('result', {}).get('list', [])
+
+            for order in order_list:
+                # Identify TP orders (Limit orders with reduceOnly=True)
+                if (order.get('orderType') == 'Limit' and
+                    order.get('reduceOnly') == True):
+
+                    order_id = order.get('orderId')
+                    order_price = order.get('price')
+                    order_qty = order.get('qty')
+
+                    self.log(f"🎯 TP detectado: ID={order_id}, Precio=${order_price}, Qty={order_qty}")
+
+                    # Cancel this TP order
+                    cancel_result = self.session.cancel_order(
+                        category="linear",
+                        symbol=symbol,
+                        orderId=order_id
+                    )
+
+                    if cancel_result.get('retCode') == 0:
+                        tp_orders_cancelled += 1
+                        self.log(f"✅ TP cancelado: ${order_price}")
+                    else:
+                        self.log(f"⚠️ Error cancelando TP {order_id}: {cancel_result.get('retMsg')}")
+
+            if tp_orders_cancelled > 0:
+                self.log(f"🧹 {tp_orders_cancelled} órdenes TP manuales canceladas - control exclusivo establecido")
+            else:
+                self.log("✅ No se encontraron órdenes TP existentes")
+
+            return True
+
+        except Exception as e:
+            self.log(f"❌ Error cancelando órdenes TP: {e}")
             return False
     
     def set_take_profit(self, symbol: str, price: float, side: str, qty: float) -> Optional[str]:
-        """Set take profit order with automatic position mode detection"""
+        """Establecer orden de take profit con detección automática de modo de posición"""
         try:
             price = self.qty_step(symbol, price)
 
@@ -246,7 +295,7 @@ class TradingEngine:
 
             # If it fails with position mode error, try other modes
             if order.get('retCode') == 10001:
-                self.log("Position mode mismatch, trying alternative modes...")
+                self.log("Modo de posición no coincide, probando modos alternativos...")
 
                 # Try all possible position indices
                 for idx in [0, 1, 2]:
@@ -268,14 +317,14 @@ class TradingEngine:
 
             if order.get('retCode') == 0:
                 order_id = order['result']['orderId']
-                self.log(f"Take profit set successfully: {order_id}")
+                self.log(f"Take profit establecido exitosamente: {order_id}")
                 return order_id
             else:
-                self.log(f"Failed to set take profit: {order.get('retMsg', 'Unknown error')}")
+                self.log(f"Falló al establecer take profit: {order.get('retMsg', 'Error desconocido')}")
                 return None
 
         except Exception as e:
-            self.log(f"Error setting take profit: {e}")
+            self.log(f"Error estableciendo take profit: {e}")
             return None
 
     def set_take_profit_with_trading_stop(self, symbol: str, price: float) -> bool:
@@ -288,7 +337,7 @@ class TradingEngine:
             if position_info:
                 current_tp = position_info.get('takeProfit', '')
                 if current_tp and abs(float(current_tp) - price) < 0.01:
-                    self.log(f"Take profit already set at {current_tp}, skipping")
+                    self.log(f"Take profit ya establecido en {current_tp}, omitiendo")
                     return True
 
             self.log(f"Setting take profit at {price}")
@@ -306,7 +355,7 @@ class TradingEngine:
 
             # If it fails with position mode error, try other modes
             if order.get('retCode') == 10001:
-                self.log("Position mode mismatch, trying alternative modes...")
+                self.log("Modo de posición no coincide, probando modos alternativos...")
 
                 # Try all possible position indices
                 for idx in [0, 1, 2]:
@@ -324,13 +373,13 @@ class TradingEngine:
                             break
 
             if order.get('retCode') == 0:
-                self.log("Take profit set successfully")
+                self.log("Take profit establecido exitosamente")
                 return True
             elif order.get('retCode') == 34040:
                 self.log("Take profit already configured at this price")
                 return True  # Consider this a success
             else:
-                self.log(f"Failed to set take profit: {order.get('retMsg', 'Unknown error')}")
+                self.log(f"Falló al establecer take profit: {order.get('retMsg', 'Error desconocido')}")
                 return False
 
         except Exception as e:
@@ -345,7 +394,7 @@ class TradingEngine:
                 return positions['result']['list'][0]
             return None
         except Exception as e:
-            self.log(f"Error getting position info: {e}")
+            self.log(f"Error obteniendo información de posición: {e}")
             return None
 
     def detect_position_mode(self, symbol: str) -> int:
@@ -370,7 +419,7 @@ class TradingEngine:
             return 0
 
         except Exception as e:
-            self.log(f"Error detecting position mode: {e}")
+            self.log(f"Error detectando modo de posición: {e}")
             self.position_mode = 0
             return 0
 
@@ -417,10 +466,10 @@ class TradingEngine:
                 self.log(f"Active positions found: {len(active_positions)}")
                 return active_positions
             else:
-                self.log(f"API error: {positions.get('retMsg', 'Unknown error')}")
+                self.log(f"Error de API: {positions.get('retMsg', 'Error desconocido')}")
                 return []
         except Exception as e:
-            self.log(f"Error getting all positions: {e}")
+            self.log(f"Error obteniendo todas las posiciones: {e}")
             return []
 
     def get_positions_summary(self) -> Dict[str, Any]:
@@ -473,7 +522,7 @@ class TradingEngine:
             return summary
 
         except Exception as e:
-            self.log(f"Error getting positions summary: {e}")
+            self.log(f"Error obteniendo resumen de posiciones: {e}")
             return {
                 'total_positions': 0,
                 'total_unrealized_pnl': 0.0,
@@ -519,7 +568,7 @@ class TradingEngine:
                     self.position_size = position_size
                     
         except Exception as e:
-            self.log(f"Error in stop loss logic: {e}")
+            self.log(f"Error en lógica de stop loss: {e}")
     
     def process_take_profit_logic(self, position: Dict[str, Any]):
         """Process take profit logic (preserved from original)"""
@@ -541,32 +590,45 @@ class TradingEngine:
                 self.log(f'Take profit price invalid: {tp_price} for {side} position at {entry_price}')
                 return
 
-            self.log(f'Calculated TP: {tp_price} for {side} position at entry {entry_price} ({self.take_profit_percentage}%)')
-                
-            # Update take profit if position changed (price, size, or value)
+            # Update take profit if position changed (price, size, or value) OR if no TP order exists
             position_key = f"{entry_price}_{qty}"
             current_key = f"{self.position_price}_{getattr(self, 'position_size', 0)}"
 
-            if position_key != current_key:
-                # Cancel existing order if exists
-                if self.take_profit_order_id:
-                    self.log(f'Cancelling existing TP order: {self.take_profit_order_id}')
-                    self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
+            # Force TP placement if no order exists or position changed
+            if position_key != current_key or not self.take_profit_order_id:
+                self.log(f'🎯 Ejecutando TP: {tp_price} para {side} en {entry_price} ({self.take_profit_percentage}%)')
 
-                # Set new take profit
-                self.log(f'Updating take profit to {tp_price} for {qty} {side} position')
+                # 🔥 CRITICAL: Ensure exclusive TP control for position changes
+                self.log(f'Posición cambió - estableciendo TP exclusivo: {tp_price}')
+
+                # Cancel our tracked order first
+                if self.take_profit_order_id:
+                    self.log(f'Cancelando TP rastreado: {self.take_profit_order_id}')
+                    self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
+                    self.take_profit_order_id = ''
+
+                # Ensure no other TP orders exist (manual or external)
+                self.cancel_all_tp_orders(self.symbol)
+                time.sleep(0.2)  # Brief pause for processing
+
+                # Set new take profit with exclusive control
+                self.log(f'Colocando TP exclusivo: {tp_price} para {qty} {side}')
                 new_order_id = self.set_take_profit(self.symbol, tp_price, side, qty)
                 if new_order_id:
                     self.take_profit_order_id = new_order_id
                     self.position_price = entry_price
                     self.position_size = qty
+                    self.log(f'🎯 TP exclusivo establecido - ID: {new_order_id}')
+            else:
+                # Only log calculation if not executing (reduce spam)
+                return
                     
         except Exception as e:
-            self.log(f"Error in take profit logic: {e}")
+            self.log(f"Error en lógica de take profit: {e}")
     
     def trading_loop(self):
         """Main trading loop"""
-        self.log("Trading loop started")
+        self.log("Bucle de trading iniciado")
         
         while self.running:
             try:
@@ -606,12 +668,12 @@ class TradingEngine:
                     self.position_price = 0
                     
             except Exception as e:
-                self.log(f"Error in trading loop: {e}")
+                self.log(f"Error en bucle de trading: {e}")
                 time.sleep(5)
                 
             time.sleep(1)
         
-        self.log("Trading loop stopped")
+        self.log("Bucle de trading detenido")
     
     def start_trading(self, symbol: str, stop_loss_enabled: bool = False, 
                      stop_loss_amount: float = 0, take_profit_enabled: bool = False,
@@ -639,18 +701,27 @@ class TradingEngine:
         self.position_capital = 0
         self.position_price = 0
         self.take_profit_order_id = ''
-        
+
         # Check if position exists
         position = self.get_position_info(self.symbol)
         if not position or float(position['size']) == 0:
             self.log(f"No open position found for {self.symbol}")
             return False
-            
+
         self.log(f"Position found for {self.symbol}")
+
+        # 🔥 CRITICAL: Establish exclusive TP control before starting
+        self.log("🚀 Iniciando control exclusivo de Take Profit...")
+        if not self.cancel_all_tp_orders(self.symbol):
+            self.log("⚠️ Advertencia: No se pudo limpiar completamente las órdenes TP existentes")
+
+        # Wait a moment for cancellations to process
+        time.sleep(0.5)
+
         self.running = True
         self.thread = threading.Thread(target=self.trading_loop, daemon=True)
         self.thread.start()
-        
+
         return True
     
     def stop_trading(self):
@@ -659,7 +730,7 @@ class TradingEngine:
             self.running = False
             if self.thread:
                 self.thread.join(timeout=5)
-            self.log("Trading stopped")
+            self.log("Trading detenido")
 
     def update_sl_amount(self, new_amount: float):
         """Update stop loss amount in real-time"""
@@ -675,11 +746,15 @@ class TradingEngine:
                     entry_price = float(position['avgPrice'])
                     side = position['side']
 
-                    # Calculate new SL price
+                    # Calculate new SL price using correct logic (same as process_stop_loss_logic)
+                    position_value = float(position['positionValue'])
+                    percentage = (new_amount * 100) / position_value
+                    price_change = entry_price * (percentage / 100)
+
                     if side == 'Buy':
-                        sl_price = entry_price - new_amount
+                        sl_price = entry_price - price_change
                     else:  # Sell
-                        sl_price = entry_price + new_amount
+                        sl_price = entry_price + price_change
 
                     # Force update by clearing existing SL first, then setting new one
                     try:
@@ -703,7 +778,7 @@ class TradingEngine:
                 self.log(f"❌ Error actualizando SL en vivo: {e}")
 
     def update_tp_percentage(self, new_percentage: float):
-        """Update take profit percentage in real-time"""
+        """Update take profit percentage in real-time using Limit Orders (lower fees)"""
         old_percentage = self.take_profit_percentage
         self.take_profit_percentage = new_percentage
         self.log(f"💰 TP actualizado: {old_percentage:.2f}% → {new_percentage:.2f}%")
@@ -715,6 +790,7 @@ class TradingEngine:
                 if position and float(position['size']) != 0:
                     entry_price = float(position['avgPrice'])
                     side = position['side']
+                    full_qty = abs(float(position['size']))
 
                     # Calculate new TP price
                     if side == 'Buy':  # Long position - TP above entry price
@@ -722,22 +798,27 @@ class TradingEngine:
                     else:  # Short position (Sell) - TP below entry price
                         tp_price = entry_price - ((entry_price * new_percentage) / 100)
 
-                    # Force update by clearing existing TP first, then setting new one
-                    try:
-                        # Clear existing take profit
-                        self.session.set_trading_stop(
-                            category="linear",
-                            symbol=self.symbol,
-                            takeProfit="",
-                            positionIdx=self.detect_position_mode(self.symbol)
-                        )
-                        self.log(f"🧹 TP anterior limpiado")
-                    except:
-                        pass  # Continue even if clearing fails
+                    # 🔥 CRITICAL: Ensure exclusive TP control - cancel ALL existing TP orders
+                    self.log("🧹 Limpieza completa de TP para actualización exclusiva...")
 
-                    # Set new take profit using trading stop
-                    if self.set_take_profit_with_trading_stop(self.symbol, tp_price):
-                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f}")
+                    # Cancel our tracked order first
+                    if self.take_profit_order_id:
+                        self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
+                        self.take_profit_order_id = ''
+
+                    # Cancel ANY other TP orders that might exist (manual or external)
+                    self.cancel_all_tp_orders(self.symbol)
+
+                    # Brief pause to ensure cancellations are processed
+                    time.sleep(0.2)
+
+                    # Set new take profit using Limit Order (lower maker fees)
+                    self.log(f"📊 Colocando nueva orden TP exclusiva para cantidad: {full_qty}")
+                    new_order_id = self.set_take_profit(self.symbol, tp_price, side, full_qty)
+                    if new_order_id:
+                        self.take_profit_order_id = new_order_id
+                        self.log(f"✅ Orden TP actualizada en Bybit: ${tp_price:.2f} (Comisión Maker: 0.020%)")
+                        self.log(f"🎯 Control exclusivo TP confirmado - ID: {new_order_id}")
                     else:
                         self.log(f"❌ Error actualizando orden TP en Bybit")
             except Exception as e:
@@ -760,10 +841,15 @@ class TradingEngine:
                         entry_price = float(position['avgPrice'])
                         side = position['side']
 
+                        # Calculate SL price using correct logic (same as process_stop_loss_logic)
+                        position_value = float(position['positionValue'])
+                        percentage = (self.stop_loss_amount * 100) / position_value
+                        price_change = entry_price * (percentage / 100)
+
                         if side == 'Buy':
-                            sl_price = entry_price - self.stop_loss_amount
+                            sl_price = entry_price - price_change
                         else:  # Sell
-                            sl_price = entry_price + self.stop_loss_amount
+                            sl_price = entry_price + price_change
 
                         if self.set_stop_loss(self.symbol, sl_price):
                             self.log(f"✅ SL activado en Bybit: ${sl_price:.2f}")
@@ -782,7 +868,7 @@ class TradingEngine:
                 self.log(f"❌ Error actualizando estado SL: {e}")
 
     def update_tp_enabled(self, enabled: bool):
-        """Update TP enabled state in real-time"""
+        """Update TP enabled state in real-time using Limit Orders (lower fees)"""
         old_state = self.take_profit_enabled
         self.take_profit_enabled = enabled
         status = "activado" if enabled else "desactivado"
@@ -794,9 +880,16 @@ class TradingEngine:
                 position = self.get_position_info(self.symbol)
                 if position and float(position['size']) != 0:
                     if enabled:
-                        # Enable TP - set new take profit using trading stop
+                        # 🔥 CRITICAL: Enable TP with exclusive control
+                        self.log("🚀 Activando TP con control exclusivo...")
+
+                        # First, ensure no existing TP orders
+                        self.cancel_all_tp_orders(self.symbol)
+                        time.sleep(0.2)  # Brief pause for processing
+
                         entry_price = float(position['avgPrice'])
                         side = position['side']
+                        qty = abs(float(position['size']))
 
                         # Calculate TP price correctly for each side
                         if side == 'Buy':  # Long position - TP above entry price
@@ -804,20 +897,23 @@ class TradingEngine:
                         else:  # Short position (Sell) - TP below entry price
                             tp_price = entry_price - ((entry_price * self.take_profit_percentage) / 100)
 
-                        if self.set_take_profit_with_trading_stop(self.symbol, tp_price):
-                            self.log(f"✅ TP activado en Bybit: ${tp_price:.2f}")
+                        new_order_id = self.set_take_profit(self.symbol, tp_price, side, qty)
+                        if new_order_id:
+                            self.take_profit_order_id = new_order_id
+                            self.log(f"✅ TP activado en Bybit: ${tp_price:.2f} (Comisión Maker: 0.020%)")
+                            self.log(f"🎯 Control exclusivo TP establecido - ID: {new_order_id}")
                     else:
-                        # Disable TP - clear existing take profit using trading stop
-                        try:
-                            self.session.set_trading_stop(
-                                category="linear",
-                                symbol=self.symbol,
-                                takeProfit="",
-                                positionIdx=self.detect_position_mode(self.symbol)
-                            )
-                            self.log(f"✅ TP desactivado - orden limpiada")
-                        except Exception as e:
-                            self.log(f"⚠️ Error desactivando TP: {e}")
+                        # 🔥 CRITICAL: Disable TP with complete cleanup
+                        self.log("🧹 Desactivando TP - limpieza completa...")
+
+                        # Cancel our tracked order
+                        if self.take_profit_order_id:
+                            self.cancel_take_profit_order(self.symbol, self.take_profit_order_id)
+                            self.take_profit_order_id = ''
+
+                        # Cancel ANY other TP orders
+                        self.cancel_all_tp_orders(self.symbol)
+                        self.log(f"✅ TP completamente desactivado - control exclusivo liberado")
             except Exception as e:
                 self.log(f"❌ Error actualizando estado TP: {e}")
 

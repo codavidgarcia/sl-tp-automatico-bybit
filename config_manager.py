@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from cryptography.fernet import Fernet
 import base64
 
@@ -53,7 +53,7 @@ class ConfigManager:
                 with open(self.config_file, 'r') as f:
                     self.config = json.load(f)
             except Exception as e:
-                print(f"Error loading config: {e}")
+                print(f"Error cargando configuración: {e}")
                 self.config = {}
         else:
             self.config = self._get_default_config()

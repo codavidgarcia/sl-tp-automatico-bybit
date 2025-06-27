@@ -1,40 +1,34 @@
 """
-Professional Trading Bot GUI using PySide6
-Modern, beautiful, and fully functional interface
+Interfaz Gráfica de Bot de Trading Profesional usando PySide6
+Interfaz moderna, hermosa y completamente funcional
 """
 
 import sys
 import os
-import threading
 import queue
 import time
-from typing import Optional
 
-# Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# PySide6 imports
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QLabel, QLineEdit, QPushButton, QCheckBox,
-    QTextEdit, QGroupBox, QFormLayout, QGridLayout, QSpacerItem, QSizePolicy,
+    QTextEdit, QGroupBox, QGridLayout, QSizePolicy,
     QMessageBox, QFrame, QScrollArea
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QThread, QObject
-from PySide6.QtGui import QFont, QPalette, QColor, QIcon
 
-# Import trading modules
+
 try:
     from trading_engine import TradingEngine
     from config_manager import ConfigManager
     MODULES_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: Could not import trading modules: {e}")
+    print(f"Advertencia: No se pudieron importar los módulos de trading: {e}")
     MODULES_AVAILABLE = False
 
 
 class ConnectionTestWorker(QObject):
-    """Worker for testing API connection in background"""
+    """Worker para probar conexión API en segundo plano"""
     finished = Signal(bool, str)
     
     def __init__(self, api_key: str, api_secret: str):
@@ -43,7 +37,7 @@ class ConnectionTestWorker(QObject):
         self.api_secret = api_secret
     
     def run(self):
-        """Test connection"""
+        """Probar conexión"""
         try:
             engine = TradingEngine(self.api_key, self.api_secret, False)  # Always use mainnet
             success = engine.initialize_session()
@@ -54,7 +48,7 @@ class ConnectionTestWorker(QObject):
 
 
 class TradingWorker(QObject):
-    """Worker for trading operations"""
+    """Worker para operaciones de trading"""
     finished = Signal(bool, str)
     log_message = Signal(str)
     
@@ -70,7 +64,7 @@ class TradingWorker(QObject):
         self.trading_engine = None
     
     def start_trading(self):
-        """Start trading"""
+        """Iniciar trading"""
         try:
             self.trading_engine = TradingEngine(
                 self.config_manager.get_api_key(),
@@ -87,14 +81,14 @@ class TradingWorker(QObject):
             )
             
             if success:
-                self.finished.emit(True, "Trading started successfully")
+                self.finished.emit(True, "Trading iniciado exitosamente")
                 # Start log monitoring
                 self.monitor_logs()
             else:
-                self.finished.emit(False, "Failed to start trading")
+                self.finished.emit(False, "Falló al iniciar trading")
                 
         except Exception as e:
-            self.finished.emit(False, f"Error starting trading: {e}")
+            self.finished.emit(False, f"Error iniciando trading: {e}")
     
     def monitor_logs(self):
         """Monitor logs from trading engine"""
@@ -110,7 +104,7 @@ class TradingWorker(QObject):
                 print(f"Log monitoring error: {e}")
     
     def stop_trading(self):
-        """Stop trading"""
+        """Detener trading"""
         if self.trading_engine:
             self.trading_engine.stop_trading()
 
@@ -154,14 +148,14 @@ class PySideTradingGUI(QMainWindow):
         self.trading_worker = None
         self.trading_thread = None
         self.trading_engine = None
-        self.is_trading_active = False  # Track actual trading state
+        self.is_trading_active = False
 
         # Thread management
         self.connection_worker = None
         self.connection_thread = None
-        self.active_threads = []  # Track all active threads
+        self.active_threads = []
 
-        # Debounce timers for input fields to prevent UI blocking
+        # Debounce timers for smooth UI experience
         self.sl_debounce_timer = QTimer()
         self.sl_debounce_timer.setSingleShot(True)
         self.sl_debounce_timer.timeout.connect(self.apply_sl_change)
@@ -169,6 +163,15 @@ class PySideTradingGUI(QMainWindow):
         self.tp_debounce_timer = QTimer()
         self.tp_debounce_timer.setSingleShot(True)
         self.tp_debounce_timer.timeout.connect(self.apply_tp_change)
+
+        # Visual feedback timers
+        self.sl_visual_timer = QTimer()
+        self.sl_visual_timer.setSingleShot(True)
+        self.sl_visual_timer.timeout.connect(self.update_sl_visual_feedback)
+
+        self.tp_visual_timer = QTimer()
+        self.tp_visual_timer.setSingleShot(True)
+        self.tp_visual_timer.timeout.connect(self.update_tp_visual_feedback)
         
         # Setup UI
         self.setup_ui()
@@ -1059,19 +1062,24 @@ class PySideTradingGUI(QMainWindow):
         self.update_order_indicators()
 
     def on_sl_value_changed(self, text):
-        """Handle SL value change - use debounce to prevent UI blocking"""
+        """Handle SL value change - optimized for smooth UI experience"""
+        # Always allow typing - don't block based on trading state
+        self.pending_sl_value = text
+
+        # Immediate visual feedback (no delay)
+        self.sl_visual_timer.stop()
+        self.sl_visual_timer.start(50)  # 50ms for visual feedback
+
+        # Only process actual trading updates if trading is active
         if not self.is_trading_active or not self.trading_worker:
             return
 
-        # Store the current text for later processing
-        self.pending_sl_value = text
-
-        # Restart the debounce timer (500ms delay)
+        # Restart the debounce timer (reduced to 300ms for better responsiveness)
         self.sl_debounce_timer.stop()
-        self.sl_debounce_timer.start(500)
+        self.sl_debounce_timer.start(300)
 
     def apply_sl_change(self):
-        """Apply SL change after debounce delay"""
+        """Apply SL change after debounce delay - completely non-blocking"""
         if not hasattr(self, 'pending_sl_value'):
             return
 
@@ -1079,27 +1087,39 @@ class PySideTradingGUI(QMainWindow):
         try:
             sl_amount = float(text) if text else 0.0
             if sl_amount > 0 and self.sl_checkbox.isChecked():
-                # Update SL in real-time
-                if hasattr(self.trading_worker, 'update_sl_amount'):
-                    self.trading_worker.update_sl_amount(sl_amount)
-                    self.add_log(f"🛡️ SL actualizado en vivo: ${sl_amount:.2f} USDT")
+
+                QTimer.singleShot(0, lambda: self._safe_update_sl(sl_amount))
         except ValueError:
-            pass  # Invalid number, ignore
+            pass
+
+    def _safe_update_sl(self, sl_amount):
+        """Safely update SL without blocking UI"""
+        try:
+            if hasattr(self.trading_worker, 'update_sl_amount') and self.trading_worker:
+                self.trading_worker.update_sl_amount(sl_amount)
+                self.add_log(f"🛡️ SL actualizado en vivo: ${sl_amount:.2f} USDT")
+        except Exception as e:
+            print(f"Error updating SL: {e}")
 
     def on_tp_value_changed(self, text):
-        """Handle TP value change - use debounce to prevent UI blocking"""
+        """Handle TP value change - optimized for smooth UI experience"""
+        # Always allow typing - don't block based on trading state
+        self.pending_tp_value = text
+
+        # Immediate visual feedback (no delay)
+        self.tp_visual_timer.stop()
+        self.tp_visual_timer.start(50)  # 50ms for visual feedback
+
+        # Only process actual trading updates if trading is active
         if not self.is_trading_active or not self.trading_worker:
             return
 
-        # Store the current text for later processing
-        self.pending_tp_value = text
-
-        # Restart the debounce timer (500ms delay)
+        # Restart the debounce timer (reduced to 300ms for better responsiveness)
         self.tp_debounce_timer.stop()
-        self.tp_debounce_timer.start(500)
+        self.tp_debounce_timer.start(300)
 
     def apply_tp_change(self):
-        """Apply TP change after debounce delay"""
+        """Apply TP change after debounce delay - completely non-blocking"""
         if not hasattr(self, 'pending_tp_value'):
             return
 
@@ -1107,12 +1127,140 @@ class PySideTradingGUI(QMainWindow):
         try:
             tp_percentage = float(text) if text else 0.0
             if tp_percentage > 0 and self.tp_checkbox.isChecked():
-                # Update TP in real-time
-                if hasattr(self.trading_worker, 'update_tp_percentage'):
-                    self.trading_worker.update_tp_percentage(tp_percentage)
-                    self.add_log(f"💰 TP actualizado en vivo: {tp_percentage:.2f}%")
+                # Use QTimer.singleShot with 0 delay to ensure UI thread doesn't block
+                # This queues the operation for the next event loop iteration
+                QTimer.singleShot(0, lambda: self._safe_update_tp(tp_percentage))
         except ValueError:
             pass  # Invalid number, ignore
+
+    def _safe_update_tp(self, tp_percentage):
+        """Safely update TP without blocking UI"""
+        try:
+            if hasattr(self.trading_worker, 'update_tp_percentage') and self.trading_worker:
+                self.trading_worker.update_tp_percentage(tp_percentage)
+                self.add_log(f"💰 TP actualizado en vivo: {tp_percentage:.2f}%")
+        except Exception as e:
+            print(f"Error updating TP: {e}")  # Log error but don't crash UI
+
+    def update_sl_visual_feedback(self):
+        """Provide immediate visual feedback for SL input"""
+        if not hasattr(self, 'pending_sl_value'):
+            return
+
+        text = self.pending_sl_value
+        try:
+            sl_amount = float(text) if text else 0.0
+            if sl_amount > 0:
+                # Valid input - green border
+                self.sl_amount_input.setStyleSheet("""
+                    QLineEdit {
+                        padding: 12px 15px;
+                        border: 2px solid #27ae60;
+                        border-radius: 8px;
+                        min-width: 80px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        background-color: #ffffff;
+                        color: #1a202c;
+                    }
+                    QLineEdit:focus {
+                        border-color: #1e8449;
+                    }
+                """)
+            else:
+                # Reset to default
+                self.sl_amount_input.setStyleSheet("""
+                    QLineEdit {
+                        padding: 12px 15px;
+                        border: 2px solid #e74c3c;
+                        border-radius: 8px;
+                        min-width: 80px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        background-color: #ffffff;
+                        color: #1a202c;
+                    }
+                    QLineEdit:focus {
+                        border-color: #c0392b;
+                    }
+                """)
+        except ValueError:
+            # Invalid input - orange border
+            self.sl_amount_input.setStyleSheet("""
+                QLineEdit {
+                    padding: 12px 15px;
+                    border: 2px solid #f39c12;
+                    border-radius: 8px;
+                    min-width: 80px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    background-color: #ffffff;
+                    color: #1a202c;
+                }
+                QLineEdit:focus {
+                    border-color: #e67e22;
+                }
+            """)
+
+    def update_tp_visual_feedback(self):
+        """Provide immediate visual feedback for TP input"""
+        if not hasattr(self, 'pending_tp_value'):
+            return
+
+        text = self.pending_tp_value
+        try:
+            tp_percentage = float(text) if text else 0.0
+            if tp_percentage > 0:
+                # Valid input - keep green border but slightly brighter
+                self.tp_percentage_input.setStyleSheet("""
+                    QLineEdit {
+                        padding: 12px 15px;
+                        border: 2px solid #2ecc71;
+                        border-radius: 8px;
+                        min-width: 80px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        background-color: #ffffff;
+                        color: #1a202c;
+                    }
+                    QLineEdit:focus {
+                        border-color: #27ae60;
+                    }
+                """)
+            else:
+                # Reset to default
+                self.tp_percentage_input.setStyleSheet("""
+                    QLineEdit {
+                        padding: 12px 15px;
+                        border: 2px solid #27ae60;
+                        border-radius: 8px;
+                        min-width: 80px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        background-color: #ffffff;
+                        color: #1a202c;
+                    }
+                    QLineEdit:focus {
+                        border-color: #1e8449;
+                    }
+                """)
+        except ValueError:
+            # Invalid input - orange border
+            self.tp_percentage_input.setStyleSheet("""
+                QLineEdit {
+                    padding: 12px 15px;
+                    border: 2px solid #f39c12;
+                    border-radius: 8px;
+                    min-width: 80px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    background-color: #ffffff;
+                    color: #1a202c;
+                }
+                QLineEdit:focus {
+                    border-color: #e67e22;
+                }
+            """)
 
     def on_sl_checkbox_changed(self, state):
         """Handle SL checkbox change - enable/disable SL in real-time"""
@@ -1445,13 +1593,13 @@ class PySideTradingGUI(QMainWindow):
     def refresh_positions(self):
         """Refresh positions data"""
         if not MODULES_AVAILABLE:
-            QMessageBox.warning(self, "Warning", "Por favor agrega primero tus credenciales API para usar el SL/TP automático")
+            QMessageBox.warning(self, "Advertencia", "Por favor agrega primero tus credenciales API para usar el SL/TP automático")
             return
 
         # Initialize trading engine if not available
         if not self.trading_engine:
             if not self.config_manager or not self.config_manager.has_valid_credentials():
-                QMessageBox.warning(self, "Warning",
+                QMessageBox.warning(self, "Advertencia",
                     "Please configure and test API credentials first in the API Configuration tab")
                 return
 
@@ -1467,7 +1615,7 @@ class PySideTradingGUI(QMainWindow):
                 else:
                     self.add_log("⚠️ Motor de trading creado pero sesión no inicializada")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to initialize trading engine: {e}")
+                QMessageBox.critical(self, "Error", f"Falló al inicializar motor de trading: {e}")
                 return
 
         try:
@@ -1614,7 +1762,7 @@ class PySideTradingGUI(QMainWindow):
     def debug_positions(self):
         """Debug positions API response"""
         if not MODULES_AVAILABLE or not self.trading_engine:
-            QMessageBox.warning(self, "Warning", "Motor de trading no disponible")
+            QMessageBox.warning(self, "Advertencia", "Motor de trading no disponible")
             return
 
         try:
@@ -1946,7 +2094,7 @@ class PySideTradingGUI(QMainWindow):
                 self.add_log("🔄 Motor de trading desactivado")
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to clear credentials: {e}")
+            QMessageBox.critical(self, "Error", f"Falló al limpiar credenciales: {e}")
             self.add_log(f"❌ Error clearing credentials: {e}")
 
     def test_connection(self):
@@ -1994,7 +2142,7 @@ class PySideTradingGUI(QMainWindow):
         self.test_btn.setText("🔍 Test Connection")
 
         if success:
-            QMessageBox.information(self, "Success", f"✅ {message}")
+            QMessageBox.information(self, "Éxito", f"✅ {message}")
             self.add_log("✅ Connection test passed")
         else:
             QMessageBox.critical(self, "Error", f"❌ {message}")
@@ -2006,30 +2154,30 @@ class PySideTradingGUI(QMainWindow):
     def start_trading(self):
         """Start trading"""
         if not MODULES_AVAILABLE:
-            QMessageBox.critical(self, "Error", "Trading modules not available")
+            QMessageBox.critical(self, "Error", "Módulos de trading no disponibles")
             return
 
         if not self.config_manager or not self.config_manager.has_valid_credentials():
-            QMessageBox.critical(self, "Error", "Please configure and test API credentials first")
+            QMessageBox.critical(self, "Error", "Por favor configura y prueba las credenciales API primero")
             return
 
         symbol = self.symbol_input.text().strip().upper()
         if not symbol:
-            QMessageBox.critical(self, "Error", "Please enter a trading symbol")
+            QMessageBox.critical(self, "Error", "Por favor ingresa un símbolo de trading")
             return
 
         sl_enabled = self.sl_checkbox.isChecked()
         tp_enabled = self.tp_checkbox.isChecked()
 
         if not sl_enabled and not tp_enabled:
-            QMessageBox.critical(self, "Error", "Please enable at least one strategy")
+            QMessageBox.critical(self, "Error", "Por favor habilita al menos una estrategia")
             return
 
         try:
             sl_amount = float(self.sl_amount_input.text()) if sl_enabled else 0
             tp_percentage = float(self.tp_percentage_input.text()) if tp_enabled else 0
         except ValueError:
-            QMessageBox.critical(self, "Error", "Please enter valid numeric values")
+            QMessageBox.critical(self, "Error", "Por favor ingresa valores numéricos válidos")
             return
 
         self.add_log(f"🚀 Starting trading for {symbol}USDT...")
@@ -2094,7 +2242,7 @@ class PySideTradingGUI(QMainWindow):
             self.update_order_indicators()
             self.add_log("✅ Trading started successfully")
         else:
-            QMessageBox.critical(self, "Error", f"Failed to start trading: {message}")
+            QMessageBox.critical(self, "Error", f"Falló al iniciar trading: {message}")
             self.on_trading_stopped()
 
     def on_trading_stopped(self):
@@ -2274,7 +2422,8 @@ class PySideTradingGUI(QMainWindow):
         # Direct content without nested frames
         features_content = QLabel("""
         • Stop Loss y Take Profit en una sola aplicación<br>
-        • Actualización automática de SL / TP en vivo y durante un trade abierto
+        • Actualización automática de SL / TP en vivo y durante un trade abierto<br>
+        • Análisis automático de órdenes previas y cancelación para manejo desde la interfaz, evitando múltiples SL/TP indeseados<br>
         • Interfaz gráfica pensada para satisfacer a usuarios novatos y avanzados<br>
         • Soporte para modo hedge (cobertura) de Bybit<br>
         • Detección automática y auto-configuración de funcionamiento en caso de modo cobertura<br>

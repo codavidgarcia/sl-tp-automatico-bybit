@@ -62,10 +62,26 @@ echo 📏 Tamaño:
 for %%A in ("dist\SL-TP-Automatico.exe") do echo    %%~zA bytes
 
 echo.
-echo 🎯 Para distribuir:
-echo    1. Copia el archivo dist\SL-TP-Automatico.exe
-echo    2. Los usuarios pueden ejecutarlo directamente
-echo    3. No necesitan Python instalado
+echo 📦 Comprimiendo para distribución...
+cd dist
+if exist "SL-TP-Automatico.exe" (
+    powershell Compress-Archive -Path "SL-TP-Automatico.exe" -DestinationPath "SL-TP-Automatico-Windows-v1.1.0.zip" -Force
+    echo ✅ Archivo comprimido: SL-TP-Automatico-Windows-v1.1.0.zip
+    for %%A in ("SL-TP-Automatico-Windows-v1.1.0.zip") do echo    Tamaño comprimido: %%~zA bytes
+) else (
+    echo ❌ No se encontró el ejecutable para comprimir
+)
+cd ..
+
+echo.
+echo 🎯 Archivos listos para distribución:
+echo    📁 dist\SL-TP-Automatico.exe (ejecutable)
+echo    📦 dist\SL-TP-Automatico-Windows-v1.1.0.zip (para subir al repo)
+echo.
+echo 💡 Los usuarios pueden:
+echo    1. Descargar y ejecutar directamente el .exe
+echo    2. No necesitan Python instalado
+echo    3. Funciona en Windows 10/11
 echo.
 
 echo 🧪 ¿Deseas probar el ejecutable ahora? [y/N]

@@ -1,20 +1,56 @@
 # 🚀 SL y TP Automático para Bybit
 
-Una aplicación de trading automatizada con interfaz gráfica moderna para gestionar Stop Loss (SL) y Take Profit (TP) automáticos en Bybit.
+Aplicación de trading automatizada con interfaz gráfica moderna para gestionar Stop Loss (SL) y Take Profit (TP) automáticos en Bybit.
 
 ## 📋 Descripción
 
-Esta aplicación permite automatizar la gestión de Stop Loss y Take Profit en tus posiciones de Bybit mediante una interfaz gráfica intuitiva desarrollada con PySide6. La aplicación se conecta directamente a la API de Bybit para monitorear y gestionar tus posiciones en tiempo real.
+Esta aplicación permite automatizar la gestión de Stop Loss y Take Profit en tus posiciones de Bybit mediante una interfaz gráfica desarrollada con PySide6. Se conecta directamente a la API de Bybit para monitorear y gestionar posiciones en tiempo real, incluso modificando en medio del trade, además utiliza órdenes Limit para TP, mejorando la rentabilidad de los trades.
 
 ## ✨ Características Principales
 
-- **Interfaz Gráfica Moderna**: Diseño profesional y fácil de usar con PySide6
-- **Gestión Automática de SL/TP**: Configuración automática de Stop Loss y Take Profit
+- **Interfaz Gráfica**: Diseño con PySide6 y feedback visual inmediato
+- **Gestión Exclusiva de SL/TP**: Control total de órdenes con cancelación automática de conflictos
+- **Modo Cobertura**: Sistema de autodetección y funcionamiento correcto incluso en modo cobertura
+- **Actualizaciones en Tiempo Real**: Modificación instantánea de SL/TP incluso en medio de un trade
 - **Monitor en Tiempo Real**: Visualización en vivo de posiciones y PnL
-- **Conexión Segura**: Credenciales almacenadas localmente de forma segura
-- **Multi-símbolo**: Soporte para múltiples criptomonedas
-- **Auto-selección**: Selección automática de ticker cuando solo hay una posición
-- **Actualización Automática**: Refresh automático de posiciones cada 5 segundos
+- **Conexión Segura**: Credenciales encriptadas y almacenadas localmente
+- **Auto-selección**: Selección automática de ticker cuando solo hay una posición y detección de tickers en tiempo real para selección sin necesidad de escribirlo manualmente
+- **Comisiones Optimizadas**: Uso de órdenes Limit (0.020% maker) vs Trading Stops (0.055% taker)
+
+## 🚀 Descarga Rápida
+
+### 📦 Ejecutables (No requiere Python)
+Descarga directa para usar inmediatamente:
+
+- **🪟 Windows**: [SL-TP-Automatico-Windows-v1.1.0.zip](dist/SL-TP-Automatico-Windows-v1.1.0.zip) *(~43MB)*
+- **🍎 macOS**: [SL-TP-Automatico-macOS-v1.1.0.zip](dist/SL-TP-Automatico-macOS-v1.1.0.zip) *(~43MB)*
+- **🐧 Linux**: [SL-TP-Automatico-Linux-v1.1.0.tar.gz](dist/SL-TP-Automatico-Linux-v1.1.0.tar.gz) *(~42MB)*
+
+### 🎯 Instrucciones de Instalación Rápida
+
+#### 🪟 **Windows**
+1. Descarga `SL-TP-Automatico-Windows-v1.1.0.zip`
+2. Extrae el archivo `SL-TP-Automatico.exe`
+3. Ejecuta directamente (doble clic)
+4. Si aparece SmartScreen: "Más información" → "Ejecutar de todos modos"
+
+#### 🍎 **macOS**
+1. Descarga `SL-TP-Automatico-macOS-v1.1.0.zip`
+2. Extrae `SL-TP-Automatico.app`
+3. Ejecuta directamente (doble clic)
+4. Si aparece advertencia: Sistema → Seguridad → "Abrir de todos modos"
+
+#### 🐧 **Linux**
+```bash
+# Descargar y extraer
+tar -xzf SL-TP-Automatico-Linux-v1.1.0.tar.gz
+
+# Dar permisos de ejecución
+chmod +x SL-TP-Automatico
+
+# Ejecutar
+./SL-TP-Automatico
+```
 
 ## 🛠️ Requisitos del Sistema
 
@@ -38,13 +74,13 @@ requests>=2.25.0
 Si solo quieres usar la aplicación sin instalar Python:
 
 #### Windows
-1. Descarga `SL-TP-Automatico.exe`
-2. Ejecuta directamente el archivo
+1. Descarga `SL-TP-Automatico-Windows-v1.1.0.zip`
+2. Extrae y ejecuta `SL-TP-Automatico.exe`
 3. ¡Listo! No necesitas Python ni dependencias
 
 #### macOS
-1. Descarga `SL-TP-Automatico.app` o `SL-TP-Automatico.dmg`
-2. Ejecuta directamente la aplicación
+1. Descarga `SL-TP-Automatico-macOS-v1.1.0.zip`
+2. Extrae y ejecuta `SL-TP-Automatico.app`
 3. ¡Listo! No necesitas Python ni dependencias
 
 ### Método 2: Crear Tu Propio Ejecutable
@@ -98,8 +134,8 @@ Si no tienes Python instalado, descárgalo desde [python.org](https://python.org
 
 #### Paso 2: Clonar el Repositorio
 ```bash
-git clone https://github.com/tu-usuario/slltp-automatico-codavidgarcia.git
-cd slltp-automatico-codavidgarcia
+git clone https://github.com/codavidgarcia/sl-tp-automatico-bybit.git
+cd sl-tp-automatico-bybit
 ```
 
 #### Paso 3: Instalar Dependencias
@@ -141,7 +177,7 @@ python pyside_trading_gui.py
 
 ### Método 3: Desde el Directorio
 ```bash
-cd slltp-automatico-codavidgarcia
+cd sl-tp-automatico-bybit
 python pyside_trading_gui.py
 ```
 
@@ -162,7 +198,7 @@ python run.py
 
 ### 1. Obtener Credenciales de API de Bybit
 
-1. **Crear Cuenta en Bybit**: Si no tienes una, regístrate en [bybit.com](https://bybit.com)
+1. **Crear Cuenta en Bybit**: Si no tienes una, regístrate en [bybit.com](https://www.bybit.com/invite?ref=PX75E3N) (Contiene link de referido) 
 
 2. **Acceder a Gestión de API**:
    - Inicia sesión en tu cuenta de Bybit
@@ -226,11 +262,6 @@ python run.py
 
 ## 🏗️ Construcción de Ejecutables
 
-### ¿Por qué crear ejecutables?
-- **Fácil distribución**: Un solo archivo que funciona sin Python
-- **Sin dependencias**: Los usuarios no necesitan instalar nada
-- **Profesional**: Se ve y funciona como software comercial
-
 ### Proceso de Construcción
 
 #### Método Universal (Recomendado)
@@ -286,6 +317,28 @@ La aplicación soporta cualquier símbolo disponible en Bybit:
 - BTC, ETH, ADA, DOT, LINK, etc.
 - Formato: Solo el símbolo base (ej: "BTC" no "BTCUSDT")
 
+## ⚠️ Advertencias Importantes por Plataforma
+
+### 🪟 **Windows**
+- **SmartScreen**: Windows puede mostrar "Aplicación no reconocida"
+  - **Solución**: Clic en "Más información" → "Ejecutar de todos modos"
+- **Antivirus**: Puede dar falsos positivos (común con PyInstaller)
+  - **Solución**: Agregar excepción en tu antivirus
+- **Firewall**: Puede pedir permisos de red
+  - **Solución**: Permitir acceso para conectar con Bybit
+
+### 🍎 **macOS**
+- **Gatekeeper**: "No se puede abrir porque proviene de un desarrollador no identificado"
+  - **Solución**: Sistema → Seguridad → "Abrir de todos modos"
+- **Permisos**: Puede pedir permisos de red
+  - **Solución**: Permitir en las preferencias del sistema
+
+### 🐧 **Linux**
+- **Permisos**: El archivo puede no tener permisos de ejecución
+  - **Solución**: `chmod +x SL-TP-Automatico`
+- **Dependencias**: Algunas distribuciones pueden necesitar librerías adicionales
+  - **Solución**: `sudo apt-get install libxcb-xinerama0` (Ubuntu/Debian)
+
 ## 🛡️ Seguridad
 
 ### Almacenamiento de Credenciales
@@ -316,11 +369,6 @@ pip install --upgrade PySide6 pybit requests
 2. Comprobar conexión a internet
 3. Verificar que la API esté activa
 
-### Error: "Position idx not match position mode"
-**Causa**: Configuración de modo de posición en Bybit
-**Solución**:
-1. Ir a Bybit → Configuración de Trading
-2. Cambiar a "Modo de Posición Única" (One-Way Mode)
 
 ### La Aplicación No Inicia
 **Solución**:
@@ -338,13 +386,13 @@ python -v pyside_trading_gui.py
 
 ## 📞 Soporte y Contacto
 
-### Desarrollador Principal
+### Desarrollo
 - **Juan David Garcia** (@codavidgarcia)
 - **Telegram**: [@codavidgarcia](https://t.me/codavidgarcia)
 - **GitHub**: [Perfil de GitHub](https://github.com/codavidgarcia)
 
 ### Herramientas Originales
-- **Andrés Perea** (El gafas trading) - Herramientas de trading originales
+- **Andrés Perea** (El gafas trading) - Scripts de SL automático y TP automático disponibles en https://github.com/ElGafasTrading
 
 ### Donaciones
 Si esta aplicación te ha sido útil, puedes apoyar el desarrollo:
@@ -365,11 +413,7 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 - Configuración segura de API
 
 ### Próximas Características
-- Soporte para más exchanges
-- Estrategias de trading avanzadas
-- Notificaciones push
-- Análisis técnico integrado
-
+- TBD
 ---
 
-**⚠️ Disclaimer**: Esta aplicación es para fines educativos y de automatización personal. El trading de criptomonedas conlleva riesgos. Usa bajo tu propia responsabilidad.
+**⚠️ Disclaimer**: Esta aplicación es para fines educativos y de automatización personal. El trading de criptomonedas conlleva riesgos. Usa bajo tu propia responsabilidad!

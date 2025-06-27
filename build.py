@@ -52,7 +52,6 @@ def clean_build():
     print("\n🧹 Limpiando builds anteriores...")
     
     dirs_to_clean = ['build', 'dist', '__pycache__']
-    files_to_clean = ['*.spec']
     
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
@@ -166,7 +165,7 @@ def build_executable():
     
     # Ejecutar construcción
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
         return True
     except subprocess.CalledProcessError as e:
         print(f"❌ Error en la construcción:")
@@ -191,7 +190,7 @@ def show_results():
             # Obtener tamaño en Unix
             result = subprocess.run(['du', '-sh', str(app_path)], 
                                   capture_output=True, text=True)
-            size = result.stdout.split()[0] if result.returncode == 0 else "Unknown"
+            size = result.stdout.split()[0] if result.returncode == 0 else "Desconocido"
             print(f"✅ Aplicación creada: {app_path}")
             print(f"📏 Tamaño: {size}")
             return str(app_path)
