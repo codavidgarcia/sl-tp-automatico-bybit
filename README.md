@@ -6,6 +6,10 @@ Aplicación de trading automatizada con interfaz gráfica moderna para gestionar
 
 Esta aplicación permite automatizar la gestión de Stop Loss y Take Profit en tus posiciones de Bybit mediante una interfaz gráfica desarrollada con PySide6. Se conecta directamente a la API de Bybit para monitorear y gestionar posiciones en tiempo real, incluso modificando en medio del trade, además utiliza órdenes Limit para TP, mejorando la rentabilidad de los trades.
 
+![Interfaz Completa](screenshots/06-interfaz-completa.png)
+
+![Configuración](screenshots/01-monitor.png)
+
 ## ✨ Características Principales
 
 - **Interfaz Gráfica**: Diseño con PySide6 y feedback visual inmediato

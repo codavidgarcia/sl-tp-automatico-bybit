@@ -2580,7 +2580,7 @@ class PySideTradingGUI(QMainWindow):
         elif donation_type == "GitHub":
             QMessageBox.information(self, "GitHub Repository",
                 "⭐ Dale una estrella en GitHub:\n\n"
-                "https://github.com/codavidgarcia\n\n"
+                "https://github.com/codavidgarcia/sl-tp-automatico-bybit\n\n"
                 "¡Tu apoyo es muy apreciado!")
 
 
