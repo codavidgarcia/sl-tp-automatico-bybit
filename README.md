@@ -6,7 +6,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/network)
 [![Telegram](https://img.shields.io/badge/Telegram-@codavidgarcia-blue?style=social&logo=telegram)](https://t.me/codavidgarcia)
 
-[![⭐ Dale una Estrella](https://img.shields.io/badge/⭐-Dale%20una%20Estrella-yellow?style=for-the-badge)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
+[![⭐ Agradéceme con un Star (click aquí)](https://img.shields.io/badge/⭐-Dale%20una%20Estrella-yellow?style=for-the-badge)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
 
 </div>
 
