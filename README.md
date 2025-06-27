@@ -1,5 +1,15 @@
 # 🚀 SL y TP Automático para Bybit
 
+<div align="center">
+
+[![GitHub stars](https://img.shields.io/github/stars/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/codavidgarcia/sl-tp-automatico-bybit?style=social)](https://github.com/codavidgarcia/sl-tp-automatico-bybit/network)
+[![Telegram](https://img.shields.io/badge/Telegram-@codavidgarcia-blue?style=social&logo=telegram)](https://t.me/codavidgarcia)
+
+[![⭐ Dale una Estrella](https://img.shields.io/badge/⭐-Dale%20una%20Estrella-yellow?style=for-the-badge)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
+
+</div>
+
 Aplicación de trading automatizada con interfaz gráfica moderna para gestionar Stop Loss (SL) y Take Profit (TP) automáticos en Bybit.
 
 ## 📋 Descripción
@@ -418,6 +428,29 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ### Próximas Características
 - TBD
+## 🙏 Apoya el Proyecto
+
+<div align="center">
+
+### ⭐ ¡Dale una Estrella!
+Si esta aplicación te ha sido útil, **dale una estrella** para apoyar el desarrollo:
+
+[![⭐ Dale una Estrella](https://img.shields.io/badge/⭐-Dale%20una%20Estrella-yellow?style=for-the-badge&logo=github)](https://github.com/codavidgarcia/sl-tp-automatico-bybit)
+
+### 💰 Donaciones
+Tu apoyo ayuda a mantener y mejorar esta herramienta:
+
+[![💰 Donar USDT](https://img.shields.io/badge/💰-Donar%20USDT%20(TRC20)-green?style=for-the-badge)](https://github.com/codavidgarcia/sl-tp-automatico-bybit#-donaciones)
+[![💳 PayPal](https://img.shields.io/badge/💳-PayPal-blue?style=for-the-badge&logo=paypal)](http://paypal.me/cojuangarcia)
+
+### 📢 Comparte
+Ayuda a otros traders compartiendo este proyecto:
+
+[![📱 Telegram](https://img.shields.io/badge/📱-Compartir%20en%20Telegram-blue?style=for-the-badge&logo=telegram)](https://t.me/share/url?url=https://github.com/codavidgarcia/sl-tp-automatico-bybit&text=🚀%20Increíble%20aplicación%20de%20trading%20automático%20para%20Bybit!)
+[![🐦 Twitter](https://img.shields.io/badge/🐦-Compartir%20en%20Twitter-blue?style=for-the-badge&logo=twitter)](https://twitter.com/intent/tweet?text=🚀%20Increíble%20aplicación%20de%20trading%20automático%20para%20Bybit!&url=https://github.com/codavidgarcia/sl-tp-automatico-bybit)
+
+</div>
+
 ---
 
 **⚠️ Disclaimer**: Esta aplicación es para fines educativos y de automatización personal. El trading de criptomonedas conlleva riesgos. Usa bajo tu propia responsabilidad!
